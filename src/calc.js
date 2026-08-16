@@ -235,6 +235,49 @@ export function patrimonioNetto(saldoConti, buoni) {
   return saldoConti + totBuoni;
 }
 
+/**
+ * Collega ogni obiettivo ai suoi versamenti (le transazioni che hanno
+ * quell'obiettivo_id), così `accumulatoObiettivo` può sommarli senza
+ * bisogno di un totale salvato separatamente nel database.
+ */
+export function collegaVersamentiAObiettivi(obiettivi, versamenti) {
+  return obiettivi.map((o) => ({
+    ...o,
+    storico: versamenti.filter((v) => v.obiettivo_id === o.id).sort((a, b) => b.data.localeCompare(a.data)),
+  }));
+}
+
+/* ------------------------------------------------------------------
+   VALIDAZIONE FORM OBIETTIVI E BUONI FRUTTIFERI
+------------------------------------------------------------------ */
+
+export function validaObiettivo(form) {
+  const errori = {};
+  if (!form.nome || !form.nome.trim()) {
+    errori.nome = "Il nome dell'obiettivo è obbligatorio";
+  }
+  const target = Number(form.target);
+  if (!form.target || Number.isNaN(target) || target <= 0) {
+    errori.target = "Inserisci un target maggiore di zero";
+  }
+  return errori;
+}
+
+export function validaBuono(form) {
+  const errori = {};
+  if (!form.nome || !form.nome.trim()) {
+    errori.nome = "Il nome è obbligatorio";
+  }
+  const importo = Number(form.importo);
+  if (!form.importo || Number.isNaN(importo) || importo <= 0) {
+    errori.importo = "Inserisci un importo maggiore di zero";
+  }
+  if (!form.scadenza) {
+    errori.scadenza = "Seleziona una data di scadenza";
+  }
+  return errori;
+}
+
 /* ------------------------------------------------------------------
    VALIDAZIONE FORM TRANSAZIONE
 ------------------------------------------------------------------ */
