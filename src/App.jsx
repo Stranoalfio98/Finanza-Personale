@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Routes, Route, NavLink } from 'react-router-dom';
-import { LayoutDashboard, ListChecks, TrendingUp, Wallet, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, ListChecks, TrendingUp, Wallet, Moon, Sun, LogOut, Loader2 } from 'lucide-react';
+import { supabase } from './supabaseClient.js';
+import Login from './pages/Login.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import InserimentoDati from './pages/InserimentoDati.jsx';
 import Investimenti from './pages/Investimenti.jsx';
@@ -8,6 +10,33 @@ import Patrimonio from './pages/Patrimonio.jsx';
 
 export default function App() {
   const [theme, setTheme] = useState('dark');
+  const [session, setSession] = useState(undefined); // undefined = still checking
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) {
+    return (
+      <div className="app-shell">
+        <div className="content">
+          <Loader2 size={16} className="spin" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className={`app-shell ${theme === 'light' ? 'light' : ''}`}>
+        <Login />
+      </div>
+    );
+  }
 
   return (
     <div className={`app-shell ${theme === 'light' ? 'light' : ''}`}>
@@ -33,6 +62,9 @@ export default function App() {
         </nav>
 
         <div className="sidebar-footer">
+          <button className="pill-icon-btn" onClick={() => supabase.auth.signOut()} title="Esci">
+            <LogOut size={14} />
+          </button>
           <button
             className="pill-icon-btn"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
