@@ -14,6 +14,9 @@ import {
   patrimonioNetto,
   validaTransazione,
   validaAuth,
+  meseChiave,
+  etichettaMese,
+  aggregaTransazioniPerMese,
 } from "./calc.js";
 
 describe("mensileEquivalente", () => {
@@ -211,5 +214,62 @@ describe("validaAuth", () => {
 
   it("accetta una email con spazi ai bordi", () => {
     expect(validaAuth({ email: "  utente@esempio.com  ", password: "almeno8car" })).toEqual({});
+  });
+});
+
+describe("meseChiave ed etichettaMese", () => {
+  it("meseChiave estrae anno-mese da una data ISO", () => {
+    expect(meseChiave("2026-03-15")).toBe("2026-03");
+    expect(meseChiave("2026-03-15T00:00:00.000Z")).toBe("2026-03");
+  });
+
+  it("etichettaMese converte in italiano leggibile", () => {
+    expect(etichettaMese("2026-03")).toBe("Marzo 2026");
+    expect(etichettaMese("2026-01")).toBe("Gennaio 2026");
+    expect(etichettaMese("2026-12")).toBe("Dicembre 2026");
+  });
+});
+
+describe("aggregaTransazioniPerMese", () => {
+  it("somma entrate e uscite per macrocategoria, per mese", () => {
+    const transazioni = [
+      { data: "2026-03-02", importo: 1300, categorie: { macrocategoria: "Entrate" } },
+      { data: "2026-03-05", importo: -50, categorie: { macrocategoria: "Risparmio" } },
+      { data: "2026-03-10", importo: -30, categorie: { macrocategoria: "Bisogno" } },
+      { data: "2026-03-15", importo: -20, categorie: { macrocategoria: "Desiderio" } },
+      { data: "2026-04-02", importo: 1320, categorie: { macrocategoria: "Entrate" } },
+    ];
+    const risultato = aggregaTransazioniPerMese(transazioni);
+    expect(risultato).toHaveLength(2);
+    expect(risultato[0]).toMatchObject({ mese: "Marzo 2026", entrata: 1300, risReale: 50, bisReale: 30, desReale: 20 });
+    expect(risultato[1]).toMatchObject({ mese: "Aprile 2026", entrata: 1320, risReale: 0, bisReale: 0, desReale: 0 });
+  });
+
+  it("ordina i mesi cronologicamente, non per ordine di inserimento", () => {
+    const transazioni = [
+      { data: "2026-05-01", importo: 100, categorie: { macrocategoria: "Entrate" } },
+      { data: "2026-02-01", importo: 100, categorie: { macrocategoria: "Entrate" } },
+      { data: "2026-03-01", importo: 100, categorie: { macrocategoria: "Entrate" } },
+    ];
+    const risultato = aggregaTransazioniPerMese(transazioni);
+    expect(risultato.map((r) => r.chiave)).toEqual(["2026-02", "2026-03", "2026-05"]);
+  });
+
+  it("ignora entrate negative e uscite positive per errori di segno (non dovrebbero capitare, ma non devono sballare i totali)", () => {
+    const transazioni = [
+      { data: "2026-03-01", importo: -100, categorie: { macrocategoria: "Entrate" } }, // scartata
+      { data: "2026-03-02", importo: 50, categorie: { macrocategoria: "Risparmio" } }, // scartata
+    ];
+    const risultato = aggregaTransazioniPerMese(transazioni);
+    expect(risultato[0]).toMatchObject({ entrata: 0, risReale: 0 });
+  });
+
+  it("lista vuota ritorna array vuoto", () => {
+    expect(aggregaTransazioniPerMese([])).toEqual([]);
+  });
+
+  it("accetta anche macrocategoria diretta, non solo tramite join", () => {
+    const transazioni = [{ data: "2026-06-01", importo: -10, macrocategoria: "Desiderio" }];
+    expect(aggregaTransazioniPerMese(transazioni)[0].desReale).toBe(10);
   });
 });
