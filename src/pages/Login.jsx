@@ -33,24 +33,22 @@ export default function Login({ auth }) {
   return (
     <div style={{ background: c.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Inter', sans-serif" }}>
       <style>{FONTS}</style>
-      <div style={{ background: c.surface, border: `1px solid ${c.line}`, borderRadius: 16, width: "min(380px, 90vw)" }} className="p-8">
-        <div className="flex flex-col items-center mb-6">
+      <div style={{ background: c.surface, border: `1px solid ${c.line}`, borderRadius: 16, width: "min(380px, 90vw)", padding: 32 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 24 }}>
           <div
             style={{
-              width: 44,
-              height: 44,
+              width: 56,
+              height: 56,
               borderRadius: "50%",
               border: `1.5px solid ${c.gold}`,
+              overflow: "hidden",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontFamily: "'Fraunces', serif",
-              fontSize: 19,
-              color: c.gold,
-              marginBottom: 10,
+              marginBottom: 12,
             }}
           >
-            B
+            <img src="/logo.png" alt="Bilancio" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <div style={{ fontFamily: "'Fraunces', serif", fontSize: 22, color: c.ink }}>Bilancio</div>
           <div style={{ fontSize: 12, color: c.inkSoft }}>libretto di finanza personale</div>
@@ -70,7 +68,7 @@ export default function Login({ auth }) {
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div>
               <label style={{ fontSize: 11, color: c.inkSoft }}>Email</label>
               <input
@@ -105,7 +103,17 @@ export default function Login({ auth }) {
             <button
               type="submit"
               disabled={inCorso}
-              style={{ background: c.gold, color: c.surface, borderRadius: 8, padding: "10px 0", fontSize: 14, fontWeight: 500, marginTop: 6, opacity: inCorso ? 0.6 : 1 }}
+              style={{
+                background: c.gold,
+                color: c.surface,
+                borderRadius: 8,
+                padding: "10px 0",
+                fontSize: 14,
+                fontWeight: 500,
+                marginTop: 6,
+                opacity: inCorso ? 0.6 : 1,
+                textAlign: "center",
+              }}
             >
               {inCorso ? "Un attimo…" : modalita === "accedi" ? "Accedi" : "Crea account"}
             </button>
@@ -116,7 +124,7 @@ export default function Login({ auth }) {
                 setModalita(modalita === "accedi" ? "registrati" : "accedi");
                 setErroriForm({});
               }}
-              style={{ fontSize: 12, color: c.inkSoft, marginTop: 4 }}
+              style={{ fontSize: 12, color: c.inkSoft, marginTop: 4, textAlign: "center" }}
             >
               {modalita === "accedi" ? "Non hai un account? Registrati" : "Hai già un account? Accedi"}
             </button>
