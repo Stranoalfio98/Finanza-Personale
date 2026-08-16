@@ -4,6 +4,7 @@ import Login from "./pages/Login.jsx";
 import Transazioni from "./pages/Transazioni.jsx";
 import BudgetMensile from "./pages/BudgetMensile.jsx";
 import Abbonamenti from "./pages/Abbonamenti.jsx";
+import Impostazioni from "./pages/Impostazioni.jsx";
 import { PALETTE, FONTS } from "./theme.js";
 
 const PAGINE = [
@@ -11,8 +12,9 @@ const PAGINE = [
   { id: "budget", label: "Budget mensile" },
   { id: "abbonamenti", label: "Abbonamenti" },
 ];
-// Le altre pagine (Dashboard, Patrimonio, Impostazioni) arrivano nei
-// prossimi passi, una alla volta.
+// Impostazioni non è tra le schede principali: si apre dall'icona a
+// ingranaggio nell'header, come deciso nell'anteprima — è una pagina
+// che si tocca di rado, non tutti i giorni come le altre.
 
 export default function App() {
   const auth = useAuth();
@@ -44,9 +46,29 @@ export default function App() {
           </div>
           <div style={{ fontFamily: "'Fraunces', serif", fontSize: 19 }}>Bilancio</div>
         </div>
-        <button onClick={auth.esci} style={{ border: `1px solid ${c.line}`, color: c.inkSoft, borderRadius: 8, padding: "6px 12px", fontSize: 13, background: c.surfaceRaised }}>
-          Esci
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button
+            onClick={() => setPagina("impostazioni")}
+            aria-label="Impostazioni"
+            style={{
+              border: `1px solid ${c.line}`,
+              background: pagina === "impostazioni" ? c.gold : c.surfaceRaised,
+              color: pagina === "impostazioni" ? c.surface : c.ink,
+              width: 34,
+              height: 34,
+              borderRadius: 8,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 15,
+            }}
+          >
+            ⚙
+          </button>
+          <button onClick={auth.esci} style={{ border: `1px solid ${c.line}`, color: c.inkSoft, borderRadius: 8, padding: "6px 12px", fontSize: 13, background: c.surfaceRaised }}>
+            Esci
+          </button>
+        </div>
       </div>
 
       <div style={{ borderBottom: `1px solid ${c.line}`, background: c.surface, display: "flex", gap: 4, padding: "0 20px", overflowX: "auto" }}>
@@ -72,6 +94,7 @@ export default function App() {
         {pagina === "transazioni" && <Transazioni theme={theme} />}
         {pagina === "budget" && <BudgetMensile theme={theme} />}
         {pagina === "abbonamenti" && <Abbonamenti theme={theme} />}
+        {pagina === "impostazioni" && <Impostazioni theme={theme} />}
       </div>
     </div>
   );
