@@ -52,6 +52,25 @@ export async function listaTransazioni({ limite = 100 } = {}) {
 
 export async function creaTransazione(input) {
   const { data: sessione } = await supabase.auth.getUser();
+
+  // Se è ricorrente, lo stato di partenza non è sempre "Attivo" per
+  // default: eredita lo stato dell'ultimo addebito con la stessa
+  // descrizione. Così un nuovo addebito non riattiva mai da solo un
+  // abbonamento che avevi segnato come abbandonato.
+  let statoAbbonamento = null;
+  if (input.ricorrente) {
+    const { data: precedenti, error: erroreLookup } = await supabase
+      .from("transazioni")
+      .select("stato_abbonamento")
+      .eq("user_id", sessione.user.id)
+      .eq("ricorrente", true)
+      .ilike("descrizione", input.descrizione.trim())
+      .order("data", { ascending: false })
+      .limit(1);
+    if (erroreLookup) throw erroreLookup;
+    statoAbbonamento = precedenti?.[0]?.stato_abbonamento ?? "Attivo";
+  }
+
   const riga = {
     user_id: sessione.user.id,
     data: input.data,
@@ -61,7 +80,7 @@ export async function creaTransazione(input) {
     importo: input.importo,
     ricorrente: input.ricorrente ?? false,
     frequenza: input.ricorrente ? input.frequenza : null,
-    stato_abbonamento: input.ricorrente ? "Attivo" : null,
+    stato_abbonamento: statoAbbonamento,
   };
   const { data, error } = await supabase.from("transazioni").insert(riga).select(SELECT_TRANSAZIONE).single();
   if (error) throw error;
@@ -108,6 +127,20 @@ export async function listaTransazioniPerBudget() {
 export async function getImpostazioni() {
   const { data: sessione } = await supabase.auth.getUser();
   const { data, error } = await supabase.from("impostazioni").select("*").eq("user_id", sessione.user.id).single();
+  if (error) throw error;
+  return data;
+}
+
+/* ------------------------------------------------------------
+   ABBONAMENTI (derivati dalle transazioni ricorrenti)
+------------------------------------------------------------ */
+
+export async function listaTransazioniRicorrenti() {
+  const { data, error } = await supabase
+    .from("transazioni")
+    .select("id, data, conto_id, categoria_id, descrizione, importo, ricorrente, frequenza, stato_abbonamento")
+    .eq("ricorrente", true)
+    .order("data", { ascending: false });
   if (error) throw error;
   return data;
 }
