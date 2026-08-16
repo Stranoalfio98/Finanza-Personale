@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { PALETTE, MACRO, inputStyle } from "../theme.js";
 import { validaTransazione, MESI_CICLO } from "../calc.js";
-import { listaConti, creaConto, listaCategorie, listaTransazioni, creaTransazione, aggiornaTransazione, eliminaTransazione } from "../lib/api.js";
+import { listaConti, creaConto, listaCategorie, listaTransazioni, creaTransazione, aggiornaTransazione, eliminaTransazione, listaObiettivi } from "../lib/api.js";
 
 const OGGI = () => new Date().toISOString().slice(0, 10);
 
-const FORM_VUOTO = { data: OGGI(), conto_id: "", categoria_id: "", descrizione: "", importo: "", ricorrente: false, frequenza: "Mensile" };
+const FORM_VUOTO = { data: OGGI(), conto_id: "", categoria_id: "", descrizione: "", importo: "", ricorrente: false, frequenza: "Mensile", obiettivo_id: "" };
 
 export default function Transazioni({ theme = "light" }) {
   const c = PALETTE[theme];
 
   const [conti, setConti] = useState([]);
   const [categorie, setCategorie] = useState([]);
+  const [obiettivi, setObiettivi] = useState([]);
   const [transazioni, setTransazioni] = useState([]);
   const [caricamento, setCaricamento] = useState(true);
   const [erroreCaricamento, setErroreCaricamento] = useState(null);
@@ -36,9 +37,10 @@ export default function Transazioni({ theme = "light" }) {
     setCaricamento(true);
     setErroreCaricamento(null);
     try {
-      const [c1, c2, t1] = await Promise.all([listaConti(), listaCategorie(), listaTransazioni()]);
+      const [c1, c2, o1, t1] = await Promise.all([listaConti(), listaCategorie(), listaObiettivi(), listaTransazioni()]);
       setConti(c1);
       setCategorie(c2);
+      setObiettivi(o1.filter((o) => o.stato !== "Archiviato"));
       setTransazioni(t1);
       setForm((f) => ({ ...f, conto_id: f.conto_id || c1[0]?.id || "", categoria_id: f.categoria_id || c2[0]?.id || "" }));
     } catch (err) {
@@ -98,6 +100,7 @@ export default function Transazioni({ theme = "light" }) {
       ricorrente: t.ricorrente,
       frequenza: t.frequenza || "Mensile",
       stato_abbonamento: t.stato_abbonamento,
+      obiettivo_id: t.obiettivo_id || "",
     });
     setErroriModifica({});
     setConfermaElimina(false);
@@ -228,10 +231,23 @@ export default function Transazioni({ theme = "light" }) {
                   ))}
                 </select>
               )}
+              {obiettivi.length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 12, color: c.inkSoft }}>Obiettivo (opzionale)</span>
+                  <select value={form.obiettivo_id} onChange={(e) => setForm({ ...form, obiettivo_id: e.target.value })} style={{ ...inputStyle(c, false), width: "auto", marginTop: 0 }}>
+                    <option value="">— nessuno —</option>
+                    {obiettivi.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             <div style={{ fontSize: 11, color: c.inkSoft, marginTop: 10 }}>
-              Il segno lo decide la categoria scelta: se è di tipo "Incasso" la transazione è un'entrata, altrimenti un'uscita — inserisci sempre l'importo positivo.
+              Il segno lo decide la categoria scelta: se è di tipo "Incasso" la transazione è un'entrata, altrimenti un'uscita — inserisci sempre l'importo positivo. Collega un versamento a un obiettivo per farlo contare nel suo progresso, in Patrimonio.
             </div>
 
             {erroriForm.generico && <div style={{ fontSize: 12, color: "#A6403A", marginTop: 8 }}>{erroriForm.generico}</div>}
@@ -331,6 +347,18 @@ export default function Transazioni({ theme = "light" }) {
                   ))}
                 </select>
               </Campo>
+              {obiettivi.length > 0 && (
+                <Campo label="Obiettivo (opzionale)">
+                  <select value={formModifica.obiettivo_id} onChange={(e) => setFormModifica({ ...formModifica, obiettivo_id: e.target.value })} style={inputStyle(c, false)}>
+                    <option value="">— nessuno —</option>
+                    {obiettivi.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.nome}
+                      </option>
+                    ))}
+                  </select>
+                </Campo>
+              )}
             </div>
 
             {erroriModifica.generico && <div style={{ fontSize: 12, color: "#A6403A", marginTop: 10 }}>{erroriModifica.generico}</div>}
