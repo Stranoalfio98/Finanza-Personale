@@ -4,6 +4,7 @@ import Login from "./pages/Login.jsx";
 import Transazioni from "./pages/Transazioni.jsx";
 import BudgetMensile from "./pages/BudgetMensile.jsx";
 import Abbonamenti from "./pages/Abbonamenti.jsx";
+import Patrimonio from "./pages/Patrimonio.jsx";
 import Impostazioni from "./pages/Impostazioni.jsx";
 import { PALETTE, FONTS } from "./theme.js";
 
@@ -11,6 +12,7 @@ const PAGINE = [
   { id: "transazioni", label: "Transazioni" },
   { id: "budget", label: "Budget mensile" },
   { id: "abbonamenti", label: "Abbonamenti" },
+  { id: "patrimonio", label: "Patrimonio" },
 ];
 // Impostazioni non è tra le schede principali: si apre dall'icona a
 // ingranaggio nell'header, come deciso nell'anteprima — è una pagina
@@ -94,6 +96,7 @@ export default function App() {
         {pagina === "transazioni" && <Transazioni theme={theme} />}
         {pagina === "budget" && <BudgetMensile theme={theme} />}
         {pagina === "abbonamenti" && <Abbonamenti theme={theme} />}
+        {pagina === "patrimonio" && <Patrimonio theme={theme} />}
         {pagina === "impostazioni" && <Impostazioni theme={theme} />}
       </div>
     </div>
