@@ -21,6 +21,9 @@ import {
   totaleAbbonamentiAttivi,
   validaConto,
   validaCategoria,
+  collegaVersamentiAObiettivi,
+  validaObiettivo,
+  validaBuono,
 } from "./calc.js";
 
 describe("mensileEquivalente", () => {
@@ -390,5 +393,67 @@ describe("validaCategoria", () => {
 
   it("segnala una macrocategoria non valida", () => {
     expect(validaCategoria({ ...valida, macrocategoria: "Altro" }).macrocategoria).toBeDefined();
+  });
+});
+
+describe("collegaVersamentiAObiettivi", () => {
+  it("collega ogni versamento all'obiettivo giusto, più recente prima", () => {
+    const obiettivi = [
+      { id: "A", nome: "Norvegia", target: 1000, stato: "Attivo" },
+      { id: "B", nome: "ETF", target: 5000, stato: "Attivo" },
+    ];
+    const versamenti = [
+      { id: "1", data: "2026-01-01", importo: 100, obiettivo_id: "A" },
+      { id: "2", data: "2026-03-01", importo: 200, obiettivo_id: "A" },
+      { id: "3", data: "2026-02-01", importo: 300, obiettivo_id: "B" },
+    ];
+    const risultato = collegaVersamentiAObiettivi(obiettivi, versamenti);
+    expect(risultato[0].storico).toHaveLength(2);
+    expect(risultato[0].storico[0].id).toBe("2"); // il più recente in cima
+    expect(risultato[1].storico).toEqual([versamenti[2]]);
+  });
+
+  it("un obiettivo senza versamenti ha storico vuoto", () => {
+    const risultato = collegaVersamentiAObiettivi([{ id: "A", nome: "X", target: 100, stato: "Attivo" }], []);
+    expect(risultato[0].storico).toEqual([]);
+  });
+
+  it("funziona insieme ad accumulatoObiettivo e statoVisibileObiettivo", () => {
+    const obiettivi = [{ id: "A", nome: "Test", target: 300, stato: "Attivo" }];
+    const versamenti = [
+      { id: "1", data: "2026-01-01", importo: 150, obiettivo_id: "A" },
+      { id: "2", data: "2026-02-01", importo: 150, obiettivo_id: "A" },
+    ];
+    const [collegato] = collegaVersamentiAObiettivi(obiettivi, versamenti);
+    expect(accumulatoObiettivo(collegato)).toBe(300);
+    expect(statoVisibileObiettivo(collegato)).toBe("Archiviato");
+  });
+});
+
+describe("validaObiettivo", () => {
+  it("nessun errore con dati validi", () => {
+    expect(validaObiettivo({ nome: "Fondo Auto", target: "1000" })).toEqual({});
+  });
+
+  it("segnala nome mancante", () => {
+    expect(validaObiettivo({ nome: "", target: "1000" }).nome).toBeDefined();
+  });
+
+  it("segnala target mancante, zero o negativo", () => {
+    expect(validaObiettivo({ nome: "X", target: "" }).target).toBeDefined();
+    expect(validaObiettivo({ nome: "X", target: "0" }).target).toBeDefined();
+    expect(validaObiettivo({ nome: "X", target: "-5" }).target).toBeDefined();
+  });
+});
+
+describe("validaBuono", () => {
+  it("nessun errore con dati validi", () => {
+    expect(validaBuono({ nome: "Buono A", importo: "1000", scadenza: "2027-01-01" })).toEqual({});
+  });
+
+  it("segnala nome, importo o scadenza mancanti", () => {
+    expect(validaBuono({ nome: "", importo: "1000", scadenza: "2027-01-01" }).nome).toBeDefined();
+    expect(validaBuono({ nome: "X", importo: "0", scadenza: "2027-01-01" }).importo).toBeDefined();
+    expect(validaBuono({ nome: "X", importo: "1000", scadenza: "" }).scadenza).toBeDefined();
   });
 });
