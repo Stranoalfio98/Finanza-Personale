@@ -96,6 +96,59 @@ export function tabellaBudgetMensile(mesi, ratio) {
 }
 
 /* ------------------------------------------------------------------
+   AGGREGAZIONE TRANSAZIONI PER MESE
+   Trasforma una lista piatta di transazioni (con la macrocategoria
+   già "espansa" dalla query) nelle righe mensili che servono a
+   tabellaBudgetMensile — entrata, e speso reale per ciascuna
+   macrocategoria.
+------------------------------------------------------------------ */
+
+const NOMI_MESI = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+
+/** Chiave "YYYY-MM" da una data ISO ("YYYY-MM-DD..."). */
+export function meseChiave(dataISO) {
+  return dataISO.slice(0, 7);
+}
+
+/** Etichetta leggibile da una chiave "YYYY-MM", es. "Marzo 2026". */
+export function etichettaMese(chiave) {
+  const [anno, mese] = chiave.split("-").map(Number);
+  return `${NOMI_MESI[mese - 1]} ${anno}`;
+}
+
+/**
+ * Raggruppa le transazioni per mese. Ogni transazione deve avere
+ * `data` (stringa ISO) e `importo` (positivo = entrata, negativo =
+ * uscita), più la macrocategoria della sua categoria — accettata sia
+ * come `categorie.macrocategoria` (forma della query con join
+ * Supabase) sia come `macrocategoria` diretta (comodo per i test).
+ */
+export function aggregaTransazioniPerMese(transazioni) {
+  const mappa = new Map();
+
+  for (const t of transazioni) {
+    const chiave = meseChiave(t.data);
+    if (!mappa.has(chiave)) {
+      mappa.set(chiave, { chiave, mese: etichettaMese(chiave), entrata: 0, risReale: 0, bisReale: 0, desReale: 0 });
+    }
+    const riga = mappa.get(chiave);
+    const macro = t.categorie?.macrocategoria ?? t.macrocategoria;
+
+    if (macro === "Entrate" && t.importo > 0) {
+      riga.entrata += t.importo;
+    } else if (macro === "Risparmio" && t.importo < 0) {
+      riga.risReale += Math.abs(t.importo);
+    } else if (macro === "Bisogno" && t.importo < 0) {
+      riga.bisReale += Math.abs(t.importo);
+    } else if (macro === "Desiderio" && t.importo < 0) {
+      riga.desReale += Math.abs(t.importo);
+    }
+  }
+
+  return [...mappa.values()].sort((a, b) => a.chiave.localeCompare(b.chiave));
+}
+
+/* ------------------------------------------------------------------
    OBIETTIVI DI RISPARMIO
 ------------------------------------------------------------------ */
 
