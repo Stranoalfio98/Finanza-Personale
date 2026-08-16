@@ -17,6 +17,8 @@ import {
   meseChiave,
   etichettaMese,
   aggregaTransazioniPerMese,
+  raggruppaAbbonamenti,
+  totaleAbbonamentiAttivi,
 } from "./calc.js";
 
 describe("mensileEquivalente", () => {
@@ -271,5 +273,83 @@ describe("aggregaTransazioniPerMese", () => {
   it("accetta anche macrocategoria diretta, non solo tramite join", () => {
     const transazioni = [{ data: "2026-06-01", importo: -10, macrocategoria: "Desiderio" }];
     expect(aggregaTransazioniPerMese(transazioni)[0].desReale).toBe(10);
+  });
+});
+
+describe("raggruppaAbbonamenti", () => {
+  const base = (overrides) => ({
+    id: "x",
+    data: "2026-01-01",
+    descrizione: "Netflix",
+    importo: -13.99,
+    ricorrente: true,
+    frequenza: "Mensile",
+    stato_abbonamento: "Attivo",
+    ...overrides,
+  });
+
+  it("ignora le transazioni non ricorrenti", () => {
+    const gruppi = raggruppaAbbonamenti([base({ ricorrente: false })]);
+    expect(gruppi).toHaveLength(0);
+  });
+
+  it("raggruppa per descrizione, ignorando maiuscole e spazi", () => {
+    const t = [
+      base({ id: "1", data: "2026-01-15", descrizione: "  Netflix " }),
+      base({ id: "2", data: "2026-02-15", descrizione: "netflix" }),
+    ];
+    const gruppi = raggruppaAbbonamenti(t);
+    expect(gruppi).toHaveLength(1);
+    expect(gruppi[0].storico).toHaveLength(2);
+  });
+
+  it("lo stato del gruppo è quello dell'addebito più recente", () => {
+    const t = [
+      base({ id: "1", data: "2026-01-01", stato_abbonamento: "Attivo" }),
+      base({ id: "2", data: "2026-03-01", stato_abbonamento: "Abbandonato" }),
+      base({ id: "3", data: "2026-02-01", stato_abbonamento: "Attivo" }),
+    ];
+    const gruppi = raggruppaAbbonamenti(t);
+    expect(gruppi[0].stato).toBe("Abbandonato");
+    expect(gruppi[0].storico[0].id).toBe("2"); // il più recente in cima
+  });
+
+  it("segnala un nuovo addebito arrivato mentre era abbandonato", () => {
+    const t = [
+      base({ id: "1", data: "2026-01-01", stato_abbonamento: "Abbandonato" }),
+      base({ id: "2", data: "2026-02-01", stato_abbonamento: "Abbandonato" }),
+    ];
+    const gruppi = raggruppaAbbonamenti(t);
+    expect(gruppi[0].nuovoAddebitoDaAbbandonato).toBe(true);
+  });
+
+  it("non segnala nulla se c'è un solo addebito, anche se abbandonato", () => {
+    const gruppi = raggruppaAbbonamenti([base({ stato_abbonamento: "Abbandonato" })]);
+    expect(gruppi[0].nuovoAddebitoDaAbbandonato).toBe(false);
+  });
+
+  it("ordina gli attivi prima degli abbandonati, poi per costo mensile decrescente", () => {
+    const t = [
+      base({ id: "1", descrizione: "Economico", importo: -5, stato_abbonamento: "Attivo" }),
+      base({ id: "2", descrizione: "Abbandonato", importo: -999, stato_abbonamento: "Abbandonato" }),
+      base({ id: "3", descrizione: "Costoso", importo: -50, stato_abbonamento: "Attivo" }),
+    ];
+    const gruppi = raggruppaAbbonamenti(t);
+    expect(gruppi.map((g) => g.nome)).toEqual(["Costoso", "Economico", "Abbandonato"]);
+  });
+});
+
+describe("totaleAbbonamentiAttivi", () => {
+  it("somma solo i gruppi attivi, con l'equivalente mensile", () => {
+    const gruppi = [
+      { stato: "Attivo", importo: 12, frequenza: "Mensile" },
+      { stato: "Attivo", importo: 120, frequenza: "Annuale" }, // 10/mese
+      { stato: "Abbandonato", importo: 999, frequenza: "Mensile" }, // escluso
+    ];
+    expect(totaleAbbonamentiAttivi(gruppi)).toBeCloseTo(22);
+  });
+
+  it("ritorna 0 senza abbonamenti attivi", () => {
+    expect(totaleAbbonamentiAttivi([{ stato: "Abbandonato", importo: 10, frequenza: "Mensile" }])).toBe(0);
   });
 });
