@@ -27,8 +27,13 @@ export default function App() {
   return (
     <div style={{ background: c.bg, minHeight: "100vh", padding: 24, fontFamily: "'Inter', sans-serif", color: c.ink }}>
       <style>{FONTS}</style>
-      <div className="flex items-center justify-between mb-4">
-        <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20 }}>Bilancio</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: "50%", border: `1.5px solid ${c.gold}`, overflow: "hidden" }}>
+            <img src="/logo.png" alt="Bilancio" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </div>
+          <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20 }}>Bilancio</div>
+        </div>
         <button
           onClick={auth.esci}
           style={{ border: `1px solid ${c.line}`, color: c.inkSoft, borderRadius: 8, padding: "6px 12px", fontSize: 13, background: c.surfaceRaised }}
@@ -41,4 +46,5 @@ export default function App() {
       </div>
     </div>
   );
+}
 }
