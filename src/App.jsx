@@ -3,14 +3,16 @@ import { useAuth } from "./lib/useAuth.js";
 import Login from "./pages/Login.jsx";
 import Transazioni from "./pages/Transazioni.jsx";
 import BudgetMensile from "./pages/BudgetMensile.jsx";
+import Abbonamenti from "./pages/Abbonamenti.jsx";
 import { PALETTE, FONTS } from "./theme.js";
 
 const PAGINE = [
   { id: "transazioni", label: "Transazioni" },
   { id: "budget", label: "Budget mensile" },
+  { id: "abbonamenti", label: "Abbonamenti" },
 ];
-// Le altre pagine (Dashboard, Abbonamenti, Patrimonio, Impostazioni)
-// arrivano nei prossimi passi, una alla volta.
+// Le altre pagine (Dashboard, Patrimonio, Impostazioni) arrivano nei
+// prossimi passi, una alla volta.
 
 export default function App() {
   const auth = useAuth();
@@ -69,6 +71,7 @@ export default function App() {
       <div style={{ padding: 24 }}>
         {pagina === "transazioni" && <Transazioni theme={theme} />}
         {pagina === "budget" && <BudgetMensile theme={theme} />}
+        {pagina === "abbonamenti" && <Abbonamenti theme={theme} />}
       </div>
     </div>
   );
