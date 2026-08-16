@@ -19,6 +19,8 @@ import {
   aggregaTransazioniPerMese,
   raggruppaAbbonamenti,
   totaleAbbonamentiAttivi,
+  validaConto,
+  validaCategoria,
 } from "./calc.js";
 
 describe("mensileEquivalente", () => {
@@ -351,5 +353,42 @@ describe("totaleAbbonamentiAttivi", () => {
 
   it("ritorna 0 senza abbonamenti attivi", () => {
     expect(totaleAbbonamentiAttivi([{ stato: "Abbandonato", importo: 10, frequenza: "Mensile" }])).toBe(0);
+  });
+});
+
+describe("validaConto", () => {
+  it("nessun errore con un nome valido e nuovo", () => {
+    expect(validaConto("N26", ["PostePay", "Revolut"])).toEqual({});
+  });
+
+  it("segnala nome vuoto", () => {
+    expect(validaConto("", []).nome).toBeDefined();
+    expect(validaConto("   ", []).nome).toBeDefined();
+  });
+
+  it("segnala un duplicato, ignorando maiuscole e spazi", () => {
+    expect(validaConto("postepay", ["PostePay"]).nome).toBeDefined();
+    expect(validaConto("  Revolut  ", ["Revolut"]).nome).toBeDefined();
+  });
+});
+
+describe("validaCategoria", () => {
+  const valida = { sottocategoria: "Palestra", categoria: "Sport & Fitness", tipo: "Pagamento", macrocategoria: "Desiderio" };
+
+  it("nessun errore con dati validi", () => {
+    expect(validaCategoria(valida)).toEqual({});
+  });
+
+  it("segnala sottocategoria o categoria mancanti", () => {
+    expect(validaCategoria({ ...valida, sottocategoria: "" }).sottocategoria).toBeDefined();
+    expect(validaCategoria({ ...valida, categoria: "" }).categoria).toBeDefined();
+  });
+
+  it("segnala un tipo non valido", () => {
+    expect(validaCategoria({ ...valida, tipo: "Boh" }).tipo).toBeDefined();
+  });
+
+  it("segnala una macrocategoria non valida", () => {
+    expect(validaCategoria({ ...valida, macrocategoria: "Altro" }).macrocategoria).toBeDefined();
   });
 });
