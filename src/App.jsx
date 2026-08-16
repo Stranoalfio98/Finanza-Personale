@@ -1,10 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import { useAuth } from "./lib/useAuth.js";
 import Login from "./pages/Login.jsx";
+import Transazioni from "./pages/Transazioni.jsx";
 import { PALETTE, FONTS } from "./theme.js";
+
+const PAGINE = [{ id: "transazioni", label: "Transazioni" }];
+// Le altre pagine (Dashboard, Budget, Abbonamenti, Patrimonio,
+// Impostazioni) arrivano nei prossimi passi, una alla volta.
 
 export default function App() {
   const auth = useAuth();
+  const [pagina, setPagina] = useState("transazioni");
+  const [theme] = useState("light");
 
   if (auth.caricamento) {
     return (
@@ -19,31 +26,43 @@ export default function App() {
     return <Login auth={auth} />;
   }
 
-  // Passo 3 continua da qui: le pagine vere (Dashboard, Transazioni,
-  // Budget mensile, Abbonamenti, Patrimonio, Impostazioni) collegate
-  // alle tabelle Supabase. Per ora solo la conferma che il login
-  // funziona, prima di costruire il resto sopra queste fondamenta.
-  const c = PALETTE.light;
+  const c = PALETTE[theme];
   return (
-    <div style={{ background: c.bg, minHeight: "100vh", padding: 24, fontFamily: "'Inter', sans-serif", color: c.ink }}>
+    <div style={{ background: c.bg, minHeight: "100vh", fontFamily: "'Inter', sans-serif", color: c.ink }}>
       <style>{FONTS}</style>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+
+      <div style={{ borderBottom: `1px solid ${c.line}`, background: c.surface, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 34, height: 34, borderRadius: "50%", border: `1.5px solid ${c.gold}`, overflow: "hidden" }}>
             <img src="/logo.png" alt="Bilancio" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
-          <div style={{ fontFamily: "'Fraunces', serif", fontSize: 20 }}>Bilancio</div>
+          <div style={{ fontFamily: "'Fraunces', serif", fontSize: 19 }}>Bilancio</div>
         </div>
-        <button
-          onClick={auth.esci}
-          style={{ border: `1px solid ${c.line}`, color: c.inkSoft, borderRadius: 8, padding: "6px 12px", fontSize: 13, background: c.surfaceRaised }}
-        >
+        <button onClick={auth.esci} style={{ border: `1px solid ${c.line}`, color: c.inkSoft, borderRadius: 8, padding: "6px 12px", fontSize: 13, background: c.surfaceRaised }}>
           Esci
         </button>
       </div>
-      <div style={{ fontSize: 13, color: c.inkSoft }}>
-        Accesso riuscito come <strong style={{ color: c.ink }}>{auth.utente.email}</strong>. Le pagine vere arrivano nel prossimo passo.
+
+      <div style={{ borderBottom: `1px solid ${c.line}`, background: c.surface, display: "flex", gap: 4, padding: "0 20px", overflowX: "auto" }}>
+        {PAGINE.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => setPagina(p.id)}
+            style={{
+              color: pagina === p.id ? c.gold : c.inkSoft,
+              borderBottom: pagina === p.id ? `2px solid ${c.gold}` : "2px solid transparent",
+              fontSize: 13,
+              fontWeight: 500,
+              padding: "12px 10px",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
+
+      <div style={{ padding: 24 }}>{pagina === "transazioni" && <Transazioni theme={theme} />}</div>
     </div>
   );
 }
