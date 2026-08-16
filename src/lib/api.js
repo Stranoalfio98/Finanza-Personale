@@ -21,6 +21,16 @@ export async function creaConto(nome) {
   return data;
 }
 
+export async function eliminaConto(id) {
+  const { error } = await supabase.from("conti").delete().eq("id", id);
+  if (error) {
+    if (error.code === "23503") {
+      throw new Error("Questo conto è usato da almeno una transazione, non puoi eliminarlo.");
+    }
+    throw error;
+  }
+}
+
 /* ------------------------------------------------------------
    CATEGORIE
 ------------------------------------------------------------ */
@@ -29,6 +39,38 @@ export async function listaCategorie() {
   const { data, error } = await supabase.from("categorie").select("*").order("categoria").order("sottocategoria");
   if (error) throw error;
   return data;
+}
+
+export async function creaCategoria(input) {
+  const { data: sessione } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from("categorie")
+    .insert({
+      user_id: sessione.user.id,
+      sottocategoria: input.sottocategoria.trim(),
+      categoria: input.categoria.trim(),
+      tipo: input.tipo,
+      macrocategoria: input.macrocategoria,
+    })
+    .select()
+    .single();
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error("Hai già una sottocategoria con questo nome.");
+    }
+    throw error;
+  }
+  return data;
+}
+
+export async function eliminaCategoria(id) {
+  const { error } = await supabase.from("categorie").delete().eq("id", id);
+  if (error) {
+    if (error.code === "23503") {
+      throw new Error("Questa categoria è usata da almeno una transazione, non puoi eliminarla.");
+    }
+    throw error;
+  }
 }
 
 /* ------------------------------------------------------------
@@ -128,6 +170,28 @@ export async function getImpostazioni() {
   const { data: sessione } = await supabase.auth.getUser();
   const { data, error } = await supabase.from("impostazioni").select("*").eq("user_id", sessione.user.id).single();
   if (error) throw error;
+  return data;
+}
+
+export async function aggiornaImpostazioni(ratio) {
+  const { data: sessione } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from("impostazioni")
+    .update({
+      split_risparmio: ratio.Risparmio,
+      split_bisogno: ratio.Bisogno,
+      split_desiderio: ratio.Desiderio,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", sessione.user.id)
+    .select()
+    .single();
+  if (error) {
+    if (error.code === "23514") {
+      throw new Error("Le tre percentuali devono sommare a 100.");
+    }
+    throw error;
+  }
   return data;
 }
 
