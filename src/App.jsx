@@ -2,11 +2,15 @@ import React, { useState } from "react";
 import { useAuth } from "./lib/useAuth.js";
 import Login from "./pages/Login.jsx";
 import Transazioni from "./pages/Transazioni.jsx";
+import BudgetMensile from "./pages/BudgetMensile.jsx";
 import { PALETTE, FONTS } from "./theme.js";
 
-const PAGINE = [{ id: "transazioni", label: "Transazioni" }];
-// Le altre pagine (Dashboard, Budget, Abbonamenti, Patrimonio,
-// Impostazioni) arrivano nei prossimi passi, una alla volta.
+const PAGINE = [
+  { id: "transazioni", label: "Transazioni" },
+  { id: "budget", label: "Budget mensile" },
+];
+// Le altre pagine (Dashboard, Abbonamenti, Patrimonio, Impostazioni)
+// arrivano nei prossimi passi, una alla volta.
 
 export default function App() {
   const auth = useAuth();
@@ -62,7 +66,10 @@ export default function App() {
         ))}
       </div>
 
-      <div style={{ padding: 24 }}>{pagina === "transazioni" && <Transazioni theme={theme} />}</div>
+      <div style={{ padding: 24 }}>
+        {pagina === "transazioni" && <Transazioni theme={theme} />}
+        {pagina === "budget" && <BudgetMensile theme={theme} />}
+      </div>
     </div>
   );
 }
