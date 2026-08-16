@@ -1,0 +1,43 @@
+/* index.css
+   Reset minimo: senza questo, bottoni e link prendono lo stile di
+   default del browser (bordo nero, sfondo grigio) invece del nostro
+   design, come si è visto sulla schermata di login in produzione. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  appearance: none;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #A97A22;
+  outline-offset: 1px;
+}
+
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
