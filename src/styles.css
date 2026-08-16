@@ -1,0 +1,110 @@
+/* =========================================================
+   FINANZA PERSONALE — stesso linguaggio visivo del Trading Journal
+   ========================================================= */
+
+* { box-sizing: border-box; }
+
+:root {
+  --bg-0: #0B0E12; --bg-1: #0E1218; --bg-2: #131720; --bg-3: #1A1F2A;
+  --bg-hover: #161B22;
+  --border-1: #1E242F; --border-2: #262C38;
+  --text: #E7EAEE; --text-dim: #8A93A3; --text-mid: #A8B0BE; --on-accent: #0B0E12;
+  --shadow-elev: none;
+
+  --green: #34C79A;   /* entrate / risparmio / obiettivi raggiunti */
+  --red: #FF5C5C;      /* uscite */
+  --blue: #4F8FF0;     /* accento neutro / investimenti */
+  --gold: #E0A939;     /* obiettivi in corso */
+}
+
+.app-shell.light {
+  --bg-0: #F1F3F6; --bg-1: #FFFFFF; --bg-2: #FFFFFF; --bg-3: #EDEFF3;
+  --bg-hover: #F5F6F8;
+  --border-1: #E3E6EB; --border-2: #D4D8E0;
+  --text: #171B23; --text-dim: #66707C; --text-mid: #4B5563; --on-accent: #0B0E12;
+  --shadow-elev: 0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.07);
+}
+
+html, body { background: var(--bg-0); margin: 0; }
+
+.app-shell {
+  display: flex; min-height: 100vh;
+  background: var(--bg-0); color: var(--text);
+  font-family: 'Inter', sans-serif; font-size: 13px;
+}
+
+.mono { font-family: 'IBM Plex Mono', monospace; }
+.dim { color: var(--text-dim); }
+.text-positive { color: var(--green); }
+.text-negative { color: var(--red); }
+
+/* ---------- SIDEBAR ---------- */
+.sidebar {
+  width: 230px; flex-shrink: 0;
+  background: var(--bg-1); border-right: 1px solid var(--border-1);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+}
+
+.sidebar-header { display: flex; align-items: center; gap: 10px; padding: 20px 16px; }
+.brand-line1 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; color: var(--text); }
+.brand-line2 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; color: var(--green); }
+
+.sidebar-nav { flex: 1; padding: 6px 12px; display: flex; flex-direction: column; gap: 7px; }
+
+.nav-pill {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-2); border: 1px solid var(--border-1);
+  color: var(--text-dim); padding: 11px 14px; border-radius: 11px;
+  font-size: 13px; font-weight: 500; text-decoration: none;
+  transition: all .12s;
+}
+.nav-pill:hover { color: var(--text); border-color: var(--border-2); }
+.nav-pill.active {
+  background: var(--green); border-color: var(--green); color: var(--on-accent);
+  font-weight: 700; box-shadow: 0 4px 14px rgba(52,199,154,0.25);
+}
+
+.sidebar-footer { border-top: 1px solid var(--border-1); padding: 12px; display: flex; justify-content: flex-end; }
+.pill-icon-btn {
+  width: 30px; height: 30px; border-radius: 8px; background: transparent; border: 1px solid var(--border-1);
+  color: var(--text-dim); display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.pill-icon-btn:hover { background: var(--bg-hover); color: var(--text); }
+
+/* ---------- MAIN ---------- */
+.main-area { flex: 1; min-width: 0; }
+.content { padding: 28px 32px; max-width: 1200px; margin: 0 auto; }
+
+.page-head { margin-bottom: 20px; }
+.page-head h2 {
+  font-family: 'Space Grotesk', sans-serif; font-size: 26px; margin: 0 0 4px; font-weight: 700; letter-spacing: -0.02em;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
+.page-head p { margin: 0; color: var(--text-dim); font-size: 13px; }
+
+/* ---------- CARDS ---------- */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
+
+.stat-card { background: var(--bg-2); border: 1px solid var(--border-1); border-radius: 10px; padding: 16px 18px; box-shadow: var(--shadow-elev); }
+.stat-label { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.stat-value { font-family: 'IBM Plex Mono', monospace; font-size: 21px; font-weight: 600; }
+.stat-value.positive { color: var(--green); }
+.stat-value.negative { color: var(--red); }
+.stat-sub { color: var(--text-dim); font-size: 11px; margin-top: 6px; }
+
+.section-title {
+  font-family: 'Space Grotesk', sans-serif; font-size: 17px; font-weight: 700;
+  margin: 28px 0 14px; letter-spacing: -0.01em;
+}
+
+.goal-card { background: var(--bg-2); border: 1px solid var(--border-1); border-radius: 10px; padding: 16px 18px; }
+.goal-card .stat-label { display: flex; justify-content: space-between; }
+.goal-bar-track { height: 6px; border-radius: 999px; background: var(--bg-3); overflow: hidden; margin-top: 10px; }
+.goal-bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--blue), var(--gold)); }
+.goal-bar-fill.completed { background: var(--green); }
+
+.state-message { color: var(--text-dim); font-size: 13px; }
+.state-message.error { color: var(--red); }
