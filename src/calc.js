@@ -281,3 +281,39 @@ export function validaAuth(form) {
   }
   return errori;
 }
+
+/* ------------------------------------------------------------------
+   VALIDAZIONE FORM IMPOSTAZIONI (conti, categorie)
+------------------------------------------------------------------ */
+
+const TIPI_VALIDI = ["Incasso", "Pagamento"];
+const MACRO_VALIDE = ["Entrate", "Risparmio", "Bisogno", "Desiderio"];
+
+/** Valida il nome di un nuovo conto. */
+export function validaConto(nome, contiEsistenti = []) {
+  const errori = {};
+  if (!nome || !nome.trim()) {
+    errori.nome = "Il nome del conto è obbligatorio";
+  } else if (contiEsistenti.some((c) => c.trim().toLowerCase() === nome.trim().toLowerCase())) {
+    errori.nome = "Hai già un conto con questo nome";
+  }
+  return errori;
+}
+
+/** Valida i campi di una nuova categoria. */
+export function validaCategoria(form) {
+  const errori = {};
+  if (!form.sottocategoria || !form.sottocategoria.trim()) {
+    errori.sottocategoria = "Il nome della sottocategoria è obbligatorio";
+  }
+  if (!form.categoria || !form.categoria.trim()) {
+    errori.categoria = "Il nome della categoria è obbligatorio";
+  }
+  if (!TIPI_VALIDI.includes(form.tipo)) {
+    errori.tipo = "Seleziona Incasso o Pagamento";
+  }
+  if (!MACRO_VALIDE.includes(form.macrocategoria)) {
+    errori.macrocategoria = "Seleziona una macrocategoria valida";
+  }
+  return errori;
+}
