@@ -149,6 +149,60 @@ export function aggregaTransazioniPerMese(transazioni) {
 }
 
 /* ------------------------------------------------------------------
+   ABBONAMENTI, DERIVATI DALLE TRANSAZIONI RICORRENTI
+   Non esiste una tabella "abbonamenti" separata: un abbonamento è
+   il raggruppamento di tutte le transazioni con ricorrente = true
+   che condividono la stessa descrizione. Lo stato attuale
+   (Attivo/Abbandonato) è quello dell'addebito più recente.
+------------------------------------------------------------------ */
+
+/**
+ * Raggruppa le transazioni ricorrenti per abbonamento (stessa
+ * descrizione, senza distinguere maiuscole/minuscole o spazi ai
+ * bordi). Ogni gruppo ha lo storico ordinato dal più recente, e lo
+ * stato attuale è quello dell'addebito più recente — mai calcolato
+ * "a memoria" separatamente, sempre derivato dalle transazioni vere.
+ */
+export function raggruppaAbbonamenti(transazioni) {
+  const mappa = new Map();
+
+  for (const t of transazioni) {
+    if (!t.ricorrente) continue;
+    const chiave = t.descrizione.trim().toLowerCase();
+    if (!mappa.has(chiave)) mappa.set(chiave, []);
+    mappa.get(chiave).push(t);
+  }
+
+  const gruppi = [];
+  for (const [chiave, lista] of mappa) {
+    const storico = [...lista].sort((a, b) => b.data.localeCompare(a.data));
+    const ultima = storico[0];
+    gruppi.push({
+      chiave,
+      nome: ultima.descrizione,
+      frequenza: ultima.frequenza,
+      importo: Math.abs(ultima.importo),
+      stato: ultima.stato_abbonamento,
+      // un nuovo addebito arrivato mentre l'abbonamento era segnato
+      // come abbandonato non lo riattiva da solo, ma vale la pena
+      // segnalarlo perché l'utente lo veda e decida lui
+      nuovoAddebitoDaAbbandonato: storico.length > 1 && ultima.stato_abbonamento === "Abbandonato",
+      storico,
+    });
+  }
+
+  return gruppi.sort((a, b) => {
+    if (a.stato !== b.stato) return a.stato === "Attivo" ? -1 : 1;
+    return mensileEquivalente({ importo: b.importo, frequenza: b.frequenza }) - mensileEquivalente({ importo: a.importo, frequenza: a.frequenza });
+  });
+}
+
+/** Totale mensile equivalente dei soli abbonamenti attivi. */
+export function totaleAbbonamentiAttivi(gruppi) {
+  return gruppi.filter((g) => g.stato === "Attivo").reduce((s, g) => s + mensileEquivalente({ importo: g.importo, frequenza: g.frequenza }), 0);
+}
+
+/* ------------------------------------------------------------------
    OBIETTIVI DI RISPARMIO
 ------------------------------------------------------------------ */
 
