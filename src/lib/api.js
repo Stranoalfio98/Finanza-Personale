@@ -123,6 +123,7 @@ export async function creaTransazione(input) {
     ricorrente: input.ricorrente ?? false,
     frequenza: input.ricorrente ? input.frequenza : null,
     stato_abbonamento: statoAbbonamento,
+    obiettivo_id: input.obiettivo_id || null,
   };
   const { data, error } = await supabase.from("transazioni").insert(riga).select(SELECT_TRANSAZIONE).single();
   if (error) throw error;
@@ -141,6 +142,7 @@ export async function aggiornaTransazione(id, input) {
       ricorrente: input.ricorrente ?? false,
       frequenza: input.ricorrente ? input.frequenza : null,
       stato_abbonamento: input.ricorrente ? input.stato_abbonamento ?? "Attivo" : null,
+      obiettivo_id: input.obiettivo_id || null,
     })
     .eq("id", id)
     .select(SELECT_TRANSAZIONE)
@@ -193,6 +195,81 @@ export async function aggiornaImpostazioni(ratio) {
     throw error;
   }
   return data;
+}
+
+/* ------------------------------------------------------------
+   PATRIMONIO: saldo totale, obiettivi, buoni fruttiferi
+------------------------------------------------------------ */
+
+export async function saldoContiTotale() {
+  const { data, error } = await supabase.from("transazioni").select("importo");
+  if (error) throw error;
+  return data.reduce((s, t) => s + Number(t.importo), 0);
+}
+
+export async function listaObiettivi() {
+  const { data, error } = await supabase.from("obiettivi").select("*").order("created_at");
+  if (error) throw error;
+  return data;
+}
+
+export async function creaObiettivo(input) {
+  const { data: sessione } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from("obiettivi")
+    .insert({ user_id: sessione.user.id, nome: input.nome.trim(), target: Number(input.target) })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function aggiornaStatoObiettivo(id, stato) {
+  const { data, error } = await supabase.from("obiettivi").update({ stato }).eq("id", id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function eliminaObiettivo(id) {
+  // "Abbandona" per gli obiettivi cancella davvero (decisione esplicita,
+  // diversa dagli abbonamenti) — le transazioni collegate NON vengono
+  // toccate: la colonna obiettivo_id diventa solo NULL (ON DELETE SET NULL).
+  const { error } = await supabase.from("obiettivi").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function listaVersamentiObiettivi() {
+  const { data, error } = await supabase.from("transazioni").select("id, data, importo, obiettivo_id").not("obiettivo_id", "is", null);
+  if (error) throw error;
+  return data;
+}
+
+export async function listaBuoni() {
+  const { data, error } = await supabase.from("buoni_fruttiferi").select("*").order("scadenza");
+  if (error) throw error;
+  return data;
+}
+
+export async function creaBuono(input) {
+  const { data: sessione } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from("buoni_fruttiferi")
+    .insert({ user_id: sessione.user.id, nome: input.nome.trim(), importo: Number(input.importo), scadenza: input.scadenza, stato: input.stato || "Bloccato" })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function aggiornaStatoBuono(id, stato) {
+  const { data, error } = await supabase.from("buoni_fruttiferi").update({ stato }).eq("id", id).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function eliminaBuono(id) {
+  const { error } = await supabase.from("buoni_fruttiferi").delete().eq("id", id);
+  if (error) throw error;
 }
 
 /* ------------------------------------------------------------
