@@ -92,3 +92,22 @@ export async function eliminaTransazione(id) {
   const { error } = await supabase.from("transazioni").delete().eq("id", id);
   if (error) throw error;
 }
+
+// Versione leggera per il Budget mensile: solo i campi che servono
+// per aggregare per mese, non l'intera riga con tutti i join.
+export async function listaTransazioniPerBudget() {
+  const { data, error } = await supabase.from("transazioni").select("data, importo, categorie(macrocategoria)").order("data", { ascending: true });
+  if (error) throw error;
+  return data;
+}
+
+/* ------------------------------------------------------------
+   IMPOSTAZIONI
+------------------------------------------------------------ */
+
+export async function getImpostazioni() {
+  const { data: sessione } = await supabase.auth.getUser();
+  const { data, error } = await supabase.from("impostazioni").select("*").eq("user_id", sessione.user.id).single();
+  if (error) throw error;
+  return data;
+}
