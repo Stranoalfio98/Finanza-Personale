@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "./lib/useAuth.js";
 import Login from "./pages/Login.jsx";
+import Dashboard from "./pages/Dashboard.jsx";
 import Transazioni from "./pages/Transazioni.jsx";
 import BudgetMensile from "./pages/BudgetMensile.jsx";
 import Abbonamenti from "./pages/Abbonamenti.jsx";
@@ -9,6 +10,7 @@ import Impostazioni from "./pages/Impostazioni.jsx";
 import { PALETTE, FONTS } from "./theme.js";
 
 const PAGINE = [
+  { id: "dashboard", label: "Dashboard" },
   { id: "transazioni", label: "Transazioni" },
   { id: "budget", label: "Budget mensile" },
   { id: "abbonamenti", label: "Abbonamenti" },
@@ -20,7 +22,7 @@ const PAGINE = [
 
 export default function App() {
   const auth = useAuth();
-  const [pagina, setPagina] = useState("transazioni");
+  const [pagina, setPagina] = useState("dashboard");
   const [theme] = useState("light");
 
   if (auth.caricamento) {
@@ -93,6 +95,7 @@ export default function App() {
       </div>
 
       <div style={{ padding: 24 }}>
+        {pagina === "dashboard" && <Dashboard theme={theme} />}
         {pagina === "transazioni" && <Transazioni theme={theme} />}
         {pagina === "budget" && <BudgetMensile theme={theme} />}
         {pagina === "abbonamenti" && <Abbonamenti theme={theme} />}
