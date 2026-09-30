@@ -347,6 +347,26 @@ export default function Transazioni({ theme = "light" }) {
                   ))}
                 </select>
               </Campo>
+
+              {/* Abbonamento: si può spuntare (o togliere) anche dopo, se ci si è
+                  dimenticati di farlo quando si è inserita la transazione. */}
+              <div style={{ borderTop: `1px solid ${c.line}`, paddingTop: 10, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}>
+                  <input type="checkbox" checked={formModifica.ricorrente} onChange={(e) => setFormModifica({ ...formModifica, ricorrente: e.target.checked })} />
+                  È un abbonamento ricorrente
+                </label>
+                {formModifica.ricorrente && (
+                  <select value={formModifica.frequenza} onChange={(e) => setFormModifica({ ...formModifica, frequenza: e.target.value })} style={{ ...inputStyle(c, erroriModifica.frequenza), width: "auto", marginTop: 0 }}>
+                    {Object.keys(MESI_CICLO).map((f) => (
+                      <option key={f} value={f}>
+                        {f}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              {erroriModifica.frequenza && <div style={{ fontSize: 11, color: "#A6403A" }}>{erroriModifica.frequenza}</div>}
+
               {obiettivi.length > 0 && (
                 <Campo label="Obiettivo (opzionale)">
                   <select value={formModifica.obiettivo_id} onChange={(e) => setFormModifica({ ...formModifica, obiettivo_id: e.target.value })} style={inputStyle(c, false)}>
