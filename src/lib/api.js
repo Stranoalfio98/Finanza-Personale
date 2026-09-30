@@ -92,26 +92,31 @@ export async function listaTransazioni({ limite = 100 } = {}) {
   return data;
 }
 
+/**
+ * Stato di partenza di un addebito appena segnato come ricorrente:
+ * eredita quello dell'ultimo addebito con la stessa descrizione, così
+ * un nuovo addebito (o uno spuntato dopo, in modifica) non riattiva
+ * mai da solo un abbonamento che avevi segnato come abbandonato.
+ * `escludiId` serve in modifica, per non trovare la transazione stessa.
+ */
+async function statoAbbonamentoEreditato(descrizione, escludiId = null) {
+  let query = supabase
+    .from("transazioni")
+    .select("stato_abbonamento")
+    .eq("ricorrente", true)
+    .ilike("descrizione", descrizione.trim())
+    .order("data", { ascending: false })
+    .limit(1);
+  if (escludiId) query = query.neq("id", escludiId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data?.[0]?.stato_abbonamento ?? "Attivo";
+}
+
 export async function creaTransazione(input) {
   const { data: sessione } = await supabase.auth.getUser();
 
-  // Se è ricorrente, lo stato di partenza non è sempre "Attivo" per
-  // default: eredita lo stato dell'ultimo addebito con la stessa
-  // descrizione. Così un nuovo addebito non riattiva mai da solo un
-  // abbonamento che avevi segnato come abbandonato.
-  let statoAbbonamento = null;
-  if (input.ricorrente) {
-    const { data: precedenti, error: erroreLookup } = await supabase
-      .from("transazioni")
-      .select("stato_abbonamento")
-      .eq("user_id", sessione.user.id)
-      .eq("ricorrente", true)
-      .ilike("descrizione", input.descrizione.trim())
-      .order("data", { ascending: false })
-      .limit(1);
-    if (erroreLookup) throw erroreLookup;
-    statoAbbonamento = precedenti?.[0]?.stato_abbonamento ?? "Attivo";
-  }
+  const statoAbbonamento = input.ricorrente ? await statoAbbonamentoEreditato(input.descrizione) : null;
 
   const riga = {
     user_id: sessione.user.id,
@@ -131,6 +136,14 @@ export async function creaTransazione(input) {
 }
 
 export async function aggiornaTransazione(id, input) {
+  // Se era già un abbonamento, tiene il suo stato. Se viene spuntato
+  // ora come abbonamento (stato ancora vuoto), lo eredita dagli
+  // addebiti precedenti con la stessa descrizione, come alla creazione.
+  let statoAbbonamento = null;
+  if (input.ricorrente) {
+    statoAbbonamento = input.stato_abbonamento || (await statoAbbonamentoEreditato(input.descrizione, id));
+  }
+
   const { data, error } = await supabase
     .from("transazioni")
     .update({
@@ -141,7 +154,7 @@ export async function aggiornaTransazione(id, input) {
       importo: input.importo,
       ricorrente: input.ricorrente ?? false,
       frequenza: input.ricorrente ? input.frequenza : null,
-      stato_abbonamento: input.ricorrente ? input.stato_abbonamento ?? "Attivo" : null,
+      stato_abbonamento: statoAbbonamento,
       obiettivo_id: input.obiettivo_id || null,
     })
     .eq("id", id)
