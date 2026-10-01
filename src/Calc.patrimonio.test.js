@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { accumulatoObiettivo, progressoObiettivo, statoVisibileObiettivo, collegaVersamentiAObiettivi, validaBuono, patrimonioNetto, TIPI_PATRIMONIO, progressoVoce } from "./calc.js";
+import { validaObiettivo, accumulatoObiettivo, progressoObiettivo, statoVisibileObiettivo, collegaVersamentiAObiettivi, validaBuono, patrimonioNetto, TIPI_PATRIMONIO, progressoVoce } from "./calc.js";
 
 // Test aggiunti dopo il bug degli obiettivi: i versamenti arrivano dalle
 // transazioni come uscite (importo negativo), e la barra risultava piena
@@ -121,5 +121,35 @@ describe("fondo trading e target sulle voci di patrimonio", () => {
 
   it("il fondo trading conta nel patrimonio netto", () => {
     expect(patrimonioNetto(1000, [{ tipo: "Fondo trading", importo: "2500" }])).toBe(3500);
+  });
+});
+
+describe("obiettivi con importo già accumulato (mesi passati)", () => {
+  const o = { target: 5000, stato: "Attivo", iniziale: "1800.00", storico: [{ importo: -150 }, { importo: -150 }] };
+
+  it("l'accumulato è il già accumulato più i versamenti collegati", () => {
+    expect(accumulatoObiettivo(o)).toBe(2100);
+  });
+
+  it("il progresso tiene conto del già accumulato", () => {
+    expect(progressoObiettivo(o)).toBeCloseTo(42);
+  });
+
+  it("senza iniziale si comporta come prima", () => {
+    expect(accumulatoObiettivo({ target: 100, stato: "Attivo", storico: [{ importo: -40 }] })).toBe(40);
+  });
+
+  it("col solo già accumulato, senza versamenti, funziona lo stesso", () => {
+    expect(accumulatoObiettivo({ target: 100, stato: "Attivo", iniziale: 30, storico: [] })).toBe(30);
+  });
+
+  it("si archivia quando già accumulato + versamenti raggiungono il target", () => {
+    expect(statoVisibileObiettivo({ target: 300, stato: "Attivo", iniziale: 200, storico: [{ importo: -100 }] })).toBe("Archiviato");
+  });
+
+  it("validaObiettivo: già accumulato facoltativo, ma non negativo", () => {
+    expect(validaObiettivo({ nome: "ETF", target: "5000", iniziale: "" })).toEqual({});
+    expect(validaObiettivo({ nome: "ETF", target: "5000", iniziale: "1800" })).toEqual({});
+    expect(validaObiettivo({ nome: "ETF", target: "5000", iniziale: "-1" }).iniziale).toBeDefined();
   });
 });
