@@ -406,3 +406,93 @@ export function validaCategoria(form) {
   }
   return errori;
 }
+
+/* ------------------------------------------------------------------
+   DASHBOARD
+------------------------------------------------------------------ */
+
+/** Chiavi "YYYY-MM" degli ultimi n mesi, dal più vecchio al mese di `oggi`. */
+export function chiaviUltimiMesi(n, oggi = new Date()) {
+  const chiavi = [];
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(oggi.getFullYear(), oggi.getMonth() - i, 1);
+    chiavi.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`);
+  }
+  return chiavi;
+}
+
+/**
+ * Entrate, uscite e messo da parte (entrate − uscite) per ciascun mese
+ * richiesto, anche quelli senza transazioni (a zero). Le uscite sono le
+ * stesse del Budget mensile: Risparmio + Bisogno + Desiderio.
+ */
+export function serieEntrateUscite(transazioni, chiavi) {
+  const perMese = new Map(aggregaTransazioniPerMese(transazioni).map((r) => [r.chiave, r]));
+  return chiavi.map((chiave) => {
+    const r = perMese.get(chiave);
+    const entrate = r ? r.entrata : 0;
+    const uscite = r ? r.risReale + r.bisReale + r.desReale : 0;
+    return { chiave, mese: etichettaMese(chiave), entrate, uscite, netto: entrate - uscite };
+  });
+}
+
+/** Saldo dei conti (somma di tutte le transazioni) alla fine di ciascun mese. */
+export function saldoFineMese(transazioni, chiavi) {
+  const movimenti = transazioni.map((t) => ({ chiave: meseChiave(t.data), importo: Number(t.importo) || 0 }));
+  return chiavi.map((chiave) => movimenti.filter((m) => m.chiave <= chiave).reduce((s, m) => s + m.importo, 0));
+}
+
+/**
+ * Tutte le uscite del mese raggruppate per macrocategoria e, dentro, per
+ * sottocategoria (dalla più alta alla più bassa).
+ */
+export function speseDelMesePerCategoria(transazioni, chiave) {
+  const gruppi = ["Risparmio", "Bisogno", "Desiderio"].map((macro) => ({ macro, totale: 0, voci: new Map() }));
+  for (const t of transazioni) {
+    const importo = Number(t.importo) || 0;
+    if (meseChiave(t.data) !== chiave || importo >= 0) continue;
+    const macro = t.categorie?.macrocategoria ?? t.macrocategoria;
+    const gruppo = gruppi.find((g) => g.macro === macro);
+    if (!gruppo) continue;
+    const nome = t.categorie?.sottocategoria ?? t.sottocategoria ?? "Altro";
+    gruppo.totale += Math.abs(importo);
+    gruppo.voci.set(nome, (gruppo.voci.get(nome) || 0) + Math.abs(importo));
+  }
+  return gruppi.map((g) => ({
+    macro: g.macro,
+    totale: g.totale,
+    voci: [...g.voci].map(([nome, importo]) => ({ nome, importo })).sort((a, b) => b.importo - a.importo),
+  }));
+}
+
+/**
+ * Budget del mese in corso: per ogni macrocategoria quanto era previsto,
+ * quanto hai speso e quanto resta; in totale quanto ti resta da spendere
+ * o risparmiare e quanto fa al giorno da qui a fine mese. `ritmo` è la
+ * percentuale del mese già passata (dove "dovresti essere" oggi).
+ * `riga` è la riga del mese di aggregaTransazioniPerMese (o null).
+ */
+export function budgetDelMese(riga, ratio, giorno, giorniMese) {
+  const r = riga ?? { entrata: 0, risReale: 0, bisReale: 0, desReale: 0 };
+  const teorico = budgetTeorico(r.entrata, ratio);
+  const reale = { Risparmio: r.risReale, Bisogno: r.bisReale, Desiderio: r.desReale };
+  const macro = ["Risparmio", "Bisogno", "Desiderio"].map((m) => ({
+    macro: m,
+    percentuale: ratio[m],
+    budget: teorico[m],
+    speso: reale[m],
+    resta: teorico[m] - reale[m],
+    avanzamento: teorico[m] > 0 ? Math.min(100, (reale[m] / teorico[m]) * 100) : reale[m] > 0 ? 100 : 0,
+  }));
+  const uscite = r.risReale + r.bisReale + r.desReale;
+  const resta = r.entrata - uscite;
+  const giorniRimasti = Math.max(1, giorniMese - giorno + 1);
+  return {
+    entrata: r.entrata,
+    uscite,
+    resta,
+    alGiorno: Math.max(0, resta) / giorniRimasti,
+    ritmo: Math.min(100, (giorno / giorniMese) * 100),
+    macro,
+  };
+}
