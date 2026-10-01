@@ -215,7 +215,10 @@ export function totaleAbbonamentiAttivi(gruppi) {
  * stringhe.
  */
 export function accumulatoObiettivo(obiettivo) {
-  return obiettivo.storico.reduce((s, h) => s + Math.abs(Number(h.importo) || 0), 0);
+  // `iniziale` = quanto avevi già accumulato prima di registrarlo in
+  // Bilancio (es. versamenti dei mesi passati): si somma ai versamenti.
+  const iniziale = Math.max(0, Number(obiettivo.iniziale) || 0);
+  return iniziale + (obiettivo.storico || []).reduce((s, h) => s + Math.abs(Number(h.importo) || 0), 0);
 }
 
 /**
@@ -292,6 +295,13 @@ export function validaObiettivo(form) {
   const target = Number(form.target);
   if (!form.target || Number.isNaN(target) || target <= 0) {
     errori.target = "Inserisci un target maggiore di zero";
+  }
+  // già accumulato: facoltativo, ma non negativo
+  if (form.iniziale !== undefined && form.iniziale !== null && form.iniziale !== "") {
+    const iniziale = Number(form.iniziale);
+    if (Number.isNaN(iniziale) || iniziale < 0) {
+      errori.iniziale = "Inserisci un importo pari o maggiore di zero (o lascialo vuoto)";
+    }
   }
   return errori;
 }
