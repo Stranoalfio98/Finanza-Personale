@@ -206,9 +206,16 @@ export function totaleAbbonamentiAttivi(gruppi) {
    OBIETTIVI DI RISPARMIO
 ------------------------------------------------------------------ */
 
-/** Somma dei versamenti di un obiettivo. */
+/**
+ * Somma dei versamenti di un obiettivo. Un versamento è una
+ * transazione collegata all'obiettivo e di solito è un'uscita
+ * (importo negativo, es. -200 verso "Risparmio Norvegia"): conta
+ * sempre come soldi messi da parte, quindi si somma in valore
+ * assoluto. Number() perché Supabase può restituire i numeric come
+ * stringhe.
+ */
 export function accumulatoObiettivo(obiettivo) {
-  return obiettivo.storico.reduce((s, h) => s + h.importo, 0);
+  return obiettivo.storico.reduce((s, h) => s + Math.abs(Number(h.importo) || 0), 0);
 }
 
 /**
@@ -217,22 +224,32 @@ export function accumulatoObiettivo(obiettivo) {
  * dallo stato manuale (Attivo/In pausa) che aveva prima.
  */
 export function statoVisibileObiettivo(obiettivo) {
-  return accumulatoObiettivo(obiettivo) >= obiettivo.target ? "Archiviato" : obiettivo.stato;
+  return accumulatoObiettivo(obiettivo) >= Number(obiettivo.target) ? "Archiviato" : obiettivo.stato;
 }
 
+/** Percentuale di avanzamento, sempre compresa tra 0 e 100. */
 export function progressoObiettivo(obiettivo) {
-  if (obiettivo.target <= 0) return 0;
-  return Math.min(100, (accumulatoObiettivo(obiettivo) / obiettivo.target) * 100);
+  const target = Number(obiettivo.target);
+  if (!(target > 0)) return 0;
+  return Math.max(0, Math.min(100, (accumulatoObiettivo(obiettivo) / target) * 100));
 }
 
 /* ------------------------------------------------------------------
    PATRIMONIO
 ------------------------------------------------------------------ */
 
-/** Patrimonio netto totale: conti liquidi + buoni fruttiferi. */
+// Tipi di risparmio "non spendibile": contano nel patrimonio totale,
+// mai nel saldo dei conti né nel budget del mese.
+export const TIPI_PATRIMONIO = ["Buono fruttifero", "Libretto", "Obbligazioni"];
+
+/**
+ * Patrimonio netto totale: conti liquidi + libretto, buoni e
+ * obbligazioni. Number() perché Supabase può restituire i numeric
+ * come stringhe.
+ */
 export function patrimonioNetto(saldoConti, buoni) {
-  const totBuoni = buoni.reduce((s, b) => s + b.importo, 0);
-  return saldoConti + totBuoni;
+  const totBuoni = buoni.reduce((s, b) => s + (Number(b.importo) || 0), 0);
+  return Number(saldoConti) + totBuoni;
 }
 
 /**
@@ -272,7 +289,13 @@ export function validaBuono(form) {
   if (!form.importo || Number.isNaN(importo) || importo <= 0) {
     errori.importo = "Inserisci un importo maggiore di zero";
   }
-  if (!form.scadenza) {
+  // La scadenza serve solo ai buoni fruttiferi (un libretto non scade).
+  // Senza tipo si assume buono fruttifero, come prima di questa modifica.
+  const tipo = form.tipo || "Buono fruttifero";
+  if (!TIPI_PATRIMONIO.includes(tipo)) {
+    errori.tipo = "Seleziona un tipo valido";
+  }
+  if (tipo === "Buono fruttifero" && !form.scadenza) {
     errori.scadenza = "Seleziona una data di scadenza";
   }
   return errori;
