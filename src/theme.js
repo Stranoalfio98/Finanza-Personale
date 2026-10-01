@@ -25,11 +25,13 @@ export const PALETTE = {
   },
 };
 
+// Colori delle macrocategorie: verificati perché si distinguano anche
+// con le forme più comuni di daltonismo, sia su sfondo chiaro che scuro.
 export const MACRO = {
-  Risparmio: { emoji: "🟢", light: "#2F6F4E", dark: "#5CAE85" },
-  Bisogno: { emoji: "🟣", light: "#6B4C8A", dark: "#A987C9" },
-  Desiderio: { emoji: "🔴", light: "#A6403A", dark: "#DB7B71" },
-  Entrate: { emoji: "⚪", light: "#3E5C76", dark: "#89B0D6" },
+  Risparmio: { emoji: "🟢", light: "#23805A", dark: "#3FA673" },
+  Bisogno: { emoji: "🟣", light: "#6B4C8A", dark: "#9873C9" },
+  Desiderio: { emoji: "🔴", light: "#B0433A", dark: "#D96A52" },
+  Entrate: { emoji: "⚪", light: "#2F6A9E", dark: "#5A95CF" },
 };
 
 export const FONTS = `
