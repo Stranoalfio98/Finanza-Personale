@@ -177,6 +177,18 @@ export async function listaTransazioniPerBudget() {
   return data;
 }
 
+// Per la Dashboard: tutte le transazioni con i campi che servono a
+// saldo, budget del mese, categorie e ultime transazioni.
+export async function listaTransazioniDashboard() {
+  const { data, error } = await supabase
+    .from("transazioni")
+    .select("id, data, created_at, descrizione, importo, conti(nome), categorie(sottocategoria, macrocategoria)")
+    .order("data", { ascending: false })
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
 /* ------------------------------------------------------------
    IMPOSTAZIONI
 ------------------------------------------------------------ */
@@ -331,7 +343,7 @@ export async function eliminaBuono(id) {
 export async function listaTransazioniRicorrenti() {
   const { data, error } = await supabase
     .from("transazioni")
-    .select("id, data, conto_id, categoria_id, descrizione, importo, ricorrente, frequenza, stato_abbonamento")
+    .select("id, data, conto_id, categoria_id, descrizione, importo, ricorrente, frequenza, stato_abbonamento, categorie(sottocategoria)")
     .eq("ricorrente", true)
     .order("data", { ascending: false });
   if (error) throw error;
