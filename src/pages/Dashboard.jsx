@@ -17,6 +17,7 @@ import {
   statoVisibileObiettivo,
   progressoObiettivo,
   progressoVoce,
+  totaleObiettivi,
 } from "../calc.js";
 import { listaTransazioniDashboard, getImpostazioni, listaTransazioniRicorrenti, listaObiettivi, listaVersamentiObiettivi, listaBuoni } from "../lib/api.js";
 
@@ -109,7 +110,9 @@ export default function Dashboard({ theme = "light" }) {
   };
 
   const disponibile = transazioni.reduce((s, t) => s + (Number(t.importo) || 0), 0);
-  const nonSpendibile = voci.reduce((s, v) => s + (Number(v.importo) || 0), 0);
+  // non spendibile = libretto, buoni, obbligazioni, fondo trading + soldi negli obiettivi
+  const obiettiviCollegati = collegaVersamentiAObiettivi(obiettivi, versamenti);
+  const nonSpendibile = voci.reduce((s, v) => s + (Number(v.importo) || 0), 0) + totaleObiettivi(obiettiviCollegati);
   const patrimonio = disponibile + nonSpendibile;
 
   const chiavi12 = chiaviUltimiMesi(12, oggi);
@@ -134,7 +137,7 @@ export default function Dashboard({ theme = "light" }) {
   const totAbb = totaleAbbonamentiAttivi(gruppiAbb);
 
   const traguardi = [
-    ...collegaVersamentiAObiettivi(obiettivi, versamenti)
+    ...obiettiviCollegati
       .filter((o) => statoVisibileObiettivo(o) !== "Archiviato")
       .map((o) => ({ id: o.id, nome: o.nome, accumulato: accumulatoObiettivo(o), target: Number(o.target), pct: progressoObiettivo(o), pausa: o.stato === "In pausa" })),
     ...voci
@@ -185,7 +188,7 @@ export default function Dashboard({ theme = "light" }) {
           <div className="db-hero-top">
             <div>
               <div className="db-label">Disponibile sui conti</div>
-              <div className="db-hint">Il massimo che puoi spendere o mettere da parte. Libretto, buoni e fondo trading sono esclusi.</div>
+              <div className="db-hint">Il massimo che puoi spendere o mettere da parte. Obiettivi, libretto, buoni e fondo trading sono esclusi.</div>
             </div>
             <span className="db-wallet" aria-hidden="true">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -273,7 +276,7 @@ export default function Dashboard({ theme = "light" }) {
               Patrimonio totale
             </div>
             <div className="db-kpi-v">{euro(patrimonio)}</div>
-            <div className="db-small">di cui {euro(nonSpendibile, 0)} non spendibili</div>
+            <div className="db-small">di cui {euro(nonSpendibile, 0)} non spendibili (obiettivi, libretto, buoni…)</div>
             <div>
               <div className="db-stack" style={{ height: 10 }} aria-hidden="true">
                 {patrimonio > 0 && <span style={{ width: `${Math.max(0, (disponibile / patrimonio) * 100)}%`, background: "var(--ink-soft)" }} />}
