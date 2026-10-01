@@ -85,7 +85,7 @@ export default function Patrimonio({ theme = "light" }) {
 function SezioneObiettivi({ c, theme, obiettivi, setErrore, ricarica }) {
   const [showArchivio, setShowArchivio] = useState(false);
   const [nuovoVisibile, setNuovoVisibile] = useState(false);
-  const [nuovo, setNuovo] = useState({ nome: "", target: "" });
+  const [nuovo, setNuovo] = useState({ nome: "", target: "", iniziale: "" });
   const [erroriNuovo, setErroriNuovo] = useState({});
   const [inCorso, setInCorso] = useState(false);
 
@@ -121,7 +121,7 @@ function SezioneObiettivi({ c, theme, obiettivi, setErrore, ricarica }) {
     try {
       await creaObiettivo(nuovo);
       await ricarica();
-      setNuovo({ nome: "", target: "" });
+      setNuovo({ nome: "", target: "", iniziale: "" });
       setNuovoVisibile(false);
     } catch (err) {
       setErroriNuovo({ generico: err.message || "Non sono riuscito a creare l'obiettivo." });
@@ -197,6 +197,11 @@ function SezioneObiettivi({ c, theme, obiettivi, setErrore, ricarica }) {
             <input type="number" value={nuovo.target} onChange={(e) => setNuovo({ ...nuovo, target: e.target.value })} style={inputStyle(c, erroriNuovo.target)} placeholder="1000" />
             {erroriNuovo.target && <div style={{ fontSize: 11, color: ROSSO, marginTop: 3 }}>{erroriNuovo.target}</div>}
           </div>
+          <div>
+            <label style={{ fontSize: 11, color: c.inkSoft }}>Già accumulato (€, opzionale)</label>
+            <input type="number" step="0.01" value={nuovo.iniziale} onChange={(e) => setNuovo({ ...nuovo, iniziale: e.target.value })} style={inputStyle(c, erroriNuovo.iniziale)} placeholder="0" />
+            {erroriNuovo.iniziale && <div style={{ fontSize: 11, color: ROSSO, marginTop: 3 }}>{erroriNuovo.iniziale}</div>}
+          </div>
           <button onClick={creaNuovo} disabled={inCorso} style={{ background: c.gold, color: c.surface, borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 500 }}>
             {inCorso ? "…" : "Crea"}
           </button>
@@ -260,6 +265,14 @@ function SezioneObiettivi({ c, theme, obiettivi, setErrore, ricarica }) {
                   <input type="number" value={modifica.target} onChange={(e) => setModifica({ ...modifica, target: e.target.value })} style={inputStyle(c, erroriModifica.target)} />
                   {erroriModifica.target && <div style={{ fontSize: 11, color: ROSSO, marginTop: 3 }}>{erroriModifica.target}</div>}
                 </div>
+                <div>
+                  <label style={{ fontSize: 11, color: c.inkSoft }}>Già accumulato prima di Bilancio (€)</label>
+                  <input type="number" step="0.01" value={modifica.iniziale} onChange={(e) => setModifica({ ...modifica, iniziale: e.target.value })} style={inputStyle(c, erroriModifica.iniziale)} placeholder="0" />
+                  {erroriModifica.iniziale && <div style={{ fontSize: 11, color: ROSSO, marginTop: 3 }}>{erroriModifica.iniziale}</div>}
+                  <div style={{ fontSize: 11, color: c.inkSoft, marginTop: 4 }}>
+                    Quanto avevi già messo da parte nei mesi in cui non usavi il sito. Le transazioni collegate a questo obiettivo si sommano a questa cifra.
+                  </div>
+                </div>
                 {erroriModifica.generico && <div style={{ fontSize: 12, color: ROSSO }}>{erroriModifica.generico}</div>}
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={() => setModifica(null)} style={{ flex: 1, borderRadius: 8, padding: "8px 0", fontSize: 12, border: `1px solid ${c.line}`, background: "transparent", color: c.ink }}>
@@ -277,25 +290,31 @@ function SezioneObiettivi({ c, theme, obiettivi, setErrore, ricarica }) {
 
             <div style={{ fontSize: 11, letterSpacing: 0.4, color: c.inkSoft, marginBottom: 8 }}>STORICO VERSAMENTI</div>
             <div style={{ display: "flex", flexDirection: "column", marginBottom: 20 }}>
-              {aperto.storico.length === 0 && <div style={{ fontSize: 12, color: c.inkSoft, padding: "6px 0" }}>Nessun versamento ancora — collegane uno da Transazioni.</div>}
+              {aperto.storico.length === 0 && !(Number(aperto.iniziale) > 0) && <div style={{ fontSize: 12, color: c.inkSoft, padding: "6px 0" }}>Nessun versamento ancora — collegane uno da Transazioni.</div>}
               {aperto.storico.map((h, i) => (
                 <div key={h.id} style={{ padding: "8px 0", borderTop: i > 0 ? `1px solid ${c.line}` : "none", display: "flex", justifyContent: "space-between", fontSize: 13 }}>
                   <span style={{ color: c.inkSoft }}>{new Date(h.data).toLocaleDateString("it-IT", { day: "2-digit", month: "short", year: "numeric" })}</span>
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>€{Math.abs(h.importo).toFixed(2)}</span>
                 </div>
               ))}
+              {Number(aperto.iniziale) > 0 && (
+                <div style={{ padding: "8px 0", borderTop: aperto.storico.length > 0 ? `1px solid ${c.line}` : "none", display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                  <span style={{ color: c.inkSoft }}>Accumulato prima di Bilancio</span>
+                  <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>€{Number(aperto.iniziale).toFixed(2)}</span>
+                </div>
+              )}
             </div>
 
             {!modifica && !confermaElimina && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <button
                   onClick={() => {
-                    setModifica({ nome: aperto.nome, target: String(aperto.target) });
+                    setModifica({ nome: aperto.nome, target: String(aperto.target), iniziale: Number(aperto.iniziale) > 0 ? String(aperto.iniziale) : "" });
                     setErroriModifica({});
                   }}
                   style={{ borderRadius: 8, padding: "9px 0", fontSize: 13, fontWeight: 500, background: c.gold, color: c.surface }}
                 >
-                  Modifica nome o target
+                  Modifica nome, target o già accumulato
                 </button>
                 {statoVisibileObiettivo(aperto) !== "Archiviato" && (
                   <div style={{ display: "flex", gap: 8 }}>
