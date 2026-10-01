@@ -242,7 +242,7 @@ export async function creaObiettivo(input) {
   const { data: sessione } = await supabase.auth.getUser();
   const { data, error } = await supabase
     .from("obiettivi")
-    .insert({ user_id: sessione.user.id, nome: input.nome.trim(), target: Number(input.target) })
+    .insert({ user_id: sessione.user.id, nome: input.nome.trim(), target: Number(input.target), iniziale: Number(input.iniziale) || 0 })
     .select()
     .single();
   if (error) throw error;
@@ -252,7 +252,7 @@ export async function creaObiettivo(input) {
 export async function aggiornaObiettivo(id, input) {
   const { data, error } = await supabase
     .from("obiettivi")
-    .update({ nome: input.nome.trim(), target: Number(input.target) })
+    .update({ nome: input.nome.trim(), target: Number(input.target), iniziale: Number(input.iniziale) || 0 })
     .eq("id", id)
     .select()
     .single();
