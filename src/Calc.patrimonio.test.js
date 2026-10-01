@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { accumulatoObiettivo, progressoObiettivo, statoVisibileObiettivo, collegaVersamentiAObiettivi, validaBuono, patrimonioNetto, TIPI_PATRIMONIO } from "./calc.js";
+import { accumulatoObiettivo, progressoObiettivo, statoVisibileObiettivo, collegaVersamentiAObiettivi, validaBuono, patrimonioNetto, TIPI_PATRIMONIO, progressoVoce } from "./calc.js";
 
 // Test aggiunti dopo il bug degli obiettivi: i versamenti arrivano dalle
 // transazioni come uscite (importo negativo), e la barra risultava piena
@@ -73,8 +73,8 @@ describe("libretto, buoni e obbligazioni", () => {
     expect(validaBuono({ tipo: "Crypto", nome: "X", importo: "10" }).tipo).toBeDefined();
   });
 
-  it("TIPI_PATRIMONIO contiene i tre tipi", () => {
-    expect(TIPI_PATRIMONIO).toEqual(["Buono fruttifero", "Libretto", "Obbligazioni"]);
+  it("TIPI_PATRIMONIO contiene i quattro tipi", () => {
+    expect(TIPI_PATRIMONIO).toEqual(["Buono fruttifero", "Libretto", "Obbligazioni", "Fondo trading"]);
   });
 
   it("patrimonioNetto somma conti e tutte le voci, anche con importi in stringa", () => {
@@ -84,5 +84,42 @@ describe("libretto, buoni e obbligazioni", () => {
       { tipo: "Obbligazioni", importo: "3000" },
     ];
     expect(patrimonioNetto(2033, voci)).toBe(22033);
+  });
+});
+
+describe("fondo trading e target sulle voci di patrimonio", () => {
+  it("Fondo trading è un tipo valido e non richiede scadenza", () => {
+    expect(validaBuono({ tipo: "Fondo trading", nome: "Capitale trading", importo: "2500", target: "10000" })).toEqual({});
+  });
+
+  it("il target è facoltativo", () => {
+    expect(validaBuono({ tipo: "Libretto", nome: "Libretto", importo: "100", target: "" })).toEqual({});
+  });
+
+  it("un target zero o negativo è un errore", () => {
+    expect(validaBuono({ tipo: "Fondo trading", nome: "X", importo: "10", target: "0" }).target).toBeDefined();
+    expect(validaBuono({ tipo: "Fondo trading", nome: "X", importo: "10", target: "-5" }).target).toBeDefined();
+  });
+
+  it("progressoVoce è null senza target", () => {
+    expect(progressoVoce({ importo: 500, target: null })).toBeNull();
+  });
+
+  it("progressoVoce calcola percentuale e quanto manca", () => {
+    const p = progressoVoce({ importo: "2500.00", target: "10000.00" });
+    expect(p.percentuale).toBeCloseTo(25);
+    expect(p.mancante).toBe(7500);
+    expect(p.raggiunto).toBe(false);
+  });
+
+  it("progressoVoce: oltre il target resta al 100% e risulta raggiunto", () => {
+    const p = progressoVoce({ importo: 12000, target: 10000 });
+    expect(p.percentuale).toBe(100);
+    expect(p.raggiunto).toBe(true);
+    expect(p.mancante).toBe(0);
+  });
+
+  it("il fondo trading conta nel patrimonio netto", () => {
+    expect(patrimonioNetto(1000, [{ tipo: "Fondo trading", importo: "2500" }])).toBe(3500);
   });
 });
