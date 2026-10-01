@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { PALETTE, MACRO, inputStyle } from "../theme.js";
-import { patrimonioNetto, collegaVersamentiAObiettivi, accumulatoObiettivo, statoVisibileObiettivo, progressoObiettivo, validaObiettivo, validaBuono, TIPI_PATRIMONIO, progressoVoce } from "../calc.js";
+import { patrimonioNetto, totaleObiettivi, collegaVersamentiAObiettivi, accumulatoObiettivo, statoVisibileObiettivo, progressoObiettivo, validaObiettivo, validaBuono, TIPI_PATRIMONIO, progressoVoce } from "../calc.js";
 import {
   saldoContiTotale,
   listaObiettivi,
@@ -51,8 +51,9 @@ export default function Patrimonio({ theme = "light" }) {
     return <div style={{ color: c.inkSoft, fontSize: 13 }}>Caricamento…</div>;
   }
 
-  const netto = patrimonioNetto(saldo, buoni);
-  const nonSpendibile = netto - saldo;
+  const netto = patrimonioNetto(saldo, buoni, obiettivi);
+  const inObiettivi = totaleObiettivi(obiettivi);
+  const inVoci = netto - saldo - inObiettivi;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -68,7 +69,10 @@ export default function Patrimonio({ theme = "light" }) {
             Conti, spendibile: <strong style={{ color: c.ink, fontWeight: 500 }}>{euro(saldo)}</strong>
           </span>
           <span>
-            Libretto, buoni, obbligazioni e trading: <strong style={{ color: c.ink, fontWeight: 500 }}>{euro(nonSpendibile)}</strong>
+            Obiettivi: <strong style={{ color: c.ink, fontWeight: 500 }}>{euro(inObiettivi)}</strong>
+          </span>
+          <span>
+            Libretto, buoni, obbligazioni e trading: <strong style={{ color: c.ink, fontWeight: 500 }}>{euro(inVoci)}</strong>
           </span>
         </div>
       </div>
