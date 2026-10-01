@@ -262,13 +262,22 @@ export function progressoVoce(voce) {
 }
 
 /**
- * Patrimonio netto totale: conti liquidi + libretto, buoni e
- * obbligazioni. Number() perché Supabase può restituire i numeric
- * come stringhe.
+ * Patrimonio netto totale: conti liquidi + libretto, buoni,
+ * obbligazioni, fondo trading + quanto hai accumulato negli obiettivi.
+ * Gli obiettivi contano perché i versamenti sono uscite: escono dal
+ * saldo dei conti, ma quei soldi li hai ancora (investiti o da parte),
+ * insieme al "già accumulato" dei mesi passati.
+ * `obiettivi` deve avere lo storico collegato (collegaVersamentiAObiettivi).
+ * Number() perché Supabase può restituire i numeric come stringhe.
  */
-export function patrimonioNetto(saldoConti, buoni) {
+export function patrimonioNetto(saldoConti, buoni, obiettivi = []) {
   const totBuoni = buoni.reduce((s, b) => s + (Number(b.importo) || 0), 0);
-  return Number(saldoConti) + totBuoni;
+  return Number(saldoConti) + totBuoni + totaleObiettivi(obiettivi);
+}
+
+/** Somma di quanto accumulato in tutti gli obiettivi (anche archiviati). */
+export function totaleObiettivi(obiettivi = []) {
+  return obiettivi.reduce((s, o) => s + accumulatoObiettivo(o), 0);
 }
 
 /**
