@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { PALETTE, MACRO, inputStyle } from "../theme.js";
-import { patrimonioNetto, collegaVersamentiAObiettivi, accumulatoObiettivo, statoVisibileObiettivo, progressoObiettivo, validaObiettivo, validaBuono, TIPI_PATRIMONIO } from "../calc.js";
+import { patrimonioNetto, collegaVersamentiAObiettivi, accumulatoObiettivo, statoVisibileObiettivo, progressoObiettivo, validaObiettivo, validaBuono, TIPI_PATRIMONIO, progressoVoce } from "../calc.js";
 import {
   saldoContiTotale,
   listaObiettivi,
@@ -68,13 +68,13 @@ export default function Patrimonio({ theme = "light" }) {
             Conti, spendibile: <strong style={{ color: c.ink, fontWeight: 500 }}>{euro(saldo)}</strong>
           </span>
           <span>
-            Libretto, buoni e obbligazioni: <strong style={{ color: c.ink, fontWeight: 500 }}>{euro(nonSpendibile)}</strong>
+            Libretto, buoni, obbligazioni e trading: <strong style={{ color: c.ink, fontWeight: 500 }}>{euro(nonSpendibile)}</strong>
           </span>
         </div>
       </div>
 
       <SezioneObiettivi c={c} theme={theme} obiettivi={obiettivi} setErrore={setErrore} ricarica={carica} />
-      <SezioneBuoni c={c} buoni={buoni} setBuoni={setBuoni} setErrore={setErrore} />
+      <SezioneBuoni c={c} theme={theme} buoni={buoni} setBuoni={setBuoni} setErrore={setErrore} />
     </div>
   );
 }
@@ -342,7 +342,7 @@ function SezioneObiettivi({ c, theme, obiettivi, setErrore, ricarica }) {
    transazioni.
 ----------------------------------------------------------------*/
 const STATI_BUONO = ["Bloccato", "In scadenza", "Scambiato"];
-const FORM_BUONO_VUOTO = { tipo: "Buono fruttifero", nome: "", importo: "", scadenza: "" };
+const FORM_BUONO_VUOTO = { tipo: "Buono fruttifero", nome: "", importo: "", scadenza: "", target: "" };
 
 function ordinaPerScadenza(lista) {
   return [...lista].sort((a, b) => {
@@ -352,7 +352,7 @@ function ordinaPerScadenza(lista) {
   });
 }
 
-function SezioneBuoni({ c, buoni, setBuoni, setErrore }) {
+function SezioneBuoni({ c, theme, buoni, setBuoni, setErrore }) {
   const [nuovoVisibile, setNuovoVisibile] = useState(false);
   const [nuovo, setNuovo] = useState(FORM_BUONO_VUOTO);
   const [erroriNuovo, setErroriNuovo] = useState({});
@@ -383,7 +383,7 @@ function SezioneBuoni({ c, buoni, setBuoni, setErrore }) {
 
   function apriModifica(b) {
     setModificaId(b.id);
-    setModifica({ tipo: b.tipo || "Buono fruttifero", nome: b.nome, importo: String(b.importo), scadenza: b.scadenza || "" });
+    setModifica({ tipo: b.tipo || "Buono fruttifero", nome: b.nome, importo: String(b.importo), scadenza: b.scadenza || "", target: b.target ? String(b.target) : "" });
     setErroriModifica({});
     setEliminaId(null);
   }
@@ -429,13 +429,13 @@ function SezioneBuoni({ c, buoni, setBuoni, setErrore }) {
   return (
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4, gap: 8, flexWrap: "wrap" }}>
-        <div style={{ fontFamily: "'Fraunces', serif", fontSize: 15 }}>Libretto, buoni e obbligazioni</div>
+        <div style={{ fontFamily: "'Fraunces', serif", fontSize: 15 }}>Libretto, buoni, obbligazioni e fondo trading</div>
         <button onClick={() => setNuovoVisibile(!nuovoVisibile)} style={{ background: c.gold, color: c.surface, borderRadius: 8, padding: "6px 10px", fontSize: 12 }}>
           + Aggiungi
         </button>
       </div>
       <div style={{ fontSize: 12, color: c.inkSoft, marginBottom: 12 }}>
-        Soldi che hai ma non puoi spendere subito. Contano nel patrimonio totale ({euro(totale)}), non nel saldo né nel budget del mese, quindi non vanno inseriti anche come transazioni.
+        Soldi che hai ma non puoi spendere subito. Contano nel patrimonio totale ({euro(totale)}), non nel saldo né nel budget del mese, quindi non vanno inseriti anche come transazioni. Puoi dare a una voce un target (es. Fondo trading a €10.000) per vedere quanto manca.
       </div>
 
       {nuovoVisibile && (
@@ -481,6 +481,7 @@ function SezioneBuoni({ c, buoni, setBuoni, setErrore }) {
                   </button>
                 </div>
               </div>
+              <BarraTarget c={c} theme={theme} voce={b} />
               {eliminaId === b.id && (
                 <div style={{ background: "#A6403A15", border: `1px solid ${ROSSO}`, borderRadius: 10, padding: 10, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 12 }}>
@@ -525,7 +526,7 @@ function FormBuono({ c, valori, setValori, errori, inCorso, etichetta, onSalva, 
             value={valori.nome}
             onChange={(e) => setValori({ ...valori, nome: e.target.value })}
             style={inputStyle(c, errori.nome)}
-            placeholder={valori.tipo === "Libretto" ? "es. Libretto Postale" : valori.tipo === "Obbligazioni" ? "es. BTP Valore 2030" : "es. Buono 3x4"}
+            placeholder={{ Libretto: "es. Libretto Postale", Obbligazioni: "es. BTP Valore 2030", "Fondo trading": "es. Capitale trading" }[valori.tipo] || "es. Buono 3x4"}
           />
           {errori.nome && <div style={{ fontSize: 11, color: ROSSO, marginTop: 3 }}>{errori.nome}</div>}
         </div>
@@ -539,6 +540,11 @@ function FormBuono({ c, valori, setValori, errori, inCorso, etichetta, onSalva, 
           <input type="date" value={valori.scadenza} onChange={(e) => setValori({ ...valori, scadenza: e.target.value })} style={inputStyle(c, errori.scadenza)} />
           {errori.scadenza && <div style={{ fontSize: 11, color: ROSSO, marginTop: 3 }}>{errori.scadenza}</div>}
         </div>
+        <div>
+          <label style={{ fontSize: 11, color: c.inkSoft }}>Target € (opzionale)</label>
+          <input type="number" step="0.01" value={valori.target} onChange={(e) => setValori({ ...valori, target: e.target.value })} style={inputStyle(c, errori.target)} placeholder={valori.tipo === "Fondo trading" ? "10000" : "nessuno"} />
+          {errori.target && <div style={{ fontSize: 11, color: ROSSO, marginTop: 3 }}>{errori.target}</div>}
+        </div>
       </div>
       {errori.generico && <div style={{ fontSize: 12, color: ROSSO }}>{errori.generico}</div>}
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
@@ -549,6 +555,33 @@ function FormBuono({ c, valori, setValori, errori, inCorso, etichetta, onSalva, 
           {inCorso ? "…" : etichetta}
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Barra di avanzamento verso il target di una voce (solo se ha un target). */
+function BarraTarget({ c, theme, voce }) {
+  const p = progressoVoce(voce);
+  if (!p) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ background: c.line, height: 8, borderRadius: 4, overflow: "hidden" }}>
+        <div style={{ width: `${p.percentuale}%`, height: "100%", background: p.raggiunto ? MACRO.Risparmio[theme] : c.gold }} />
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap", fontSize: 12, color: c.inkSoft }}>
+        <span>
+          {p.percentuale.toFixed(0)}% di {euro(voce.target)}
+        </span>
+        <span>{p.raggiunto ? "" : `mancano ${euro(p.mancante)}`}</span>
+      </div>
+      {p.raggiunto && (
+        <div style={{ fontSize: 12, color: MACRO.Risparmio[theme], background: `${MACRO.Risparmio[theme]}15`, border: `1px solid ${MACRO.Risparmio[theme]}40`, borderRadius: 8, padding: "8px 10px" }}>
+          Target raggiunto.{" "}
+          {voce.tipo === "Fondo trading"
+            ? "Da ora puoi registrare i nuovi profitti in Transazioni come entrata (📈 P/L Trading Profitto): conteranno come soldi da spendere."
+            : "Puoi alzare il target o lasciarlo così."}
+        </div>
+      )}
     </div>
   );
 }
