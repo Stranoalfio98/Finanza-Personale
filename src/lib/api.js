@@ -269,7 +269,7 @@ export async function listaVersamentiObiettivi() {
 }
 
 // La tabella si chiama ancora buoni_fruttiferi, ma ora contiene tutti i
-// risparmi non spendibili (libretto, buoni, obbligazioni), distinti
+// risparmi non spendibili (libretto, buoni, obbligazioni, fondo trading), distinti
 // dalla colonna `tipo`. Prima quelli con scadenza, i senza in fondo.
 export async function listaBuoni() {
   const { data, error } = await supabase.from("buoni_fruttiferi").select("*").order("scadenza", { ascending: true, nullsFirst: false });
@@ -287,6 +287,7 @@ export async function creaBuono(input) {
       nome: input.nome.trim(),
       importo: Number(input.importo),
       scadenza: input.scadenza || null,
+      target: input.target ? Number(input.target) : null,
       stato: input.stato || "Bloccato",
     })
     .select()
@@ -298,7 +299,13 @@ export async function creaBuono(input) {
 export async function aggiornaBuono(id, input) {
   const { data, error } = await supabase
     .from("buoni_fruttiferi")
-    .update({ tipo: input.tipo, nome: input.nome.trim(), importo: Number(input.importo), scadenza: input.scadenza || null })
+    .update({
+      tipo: input.tipo,
+      nome: input.nome.trim(),
+      importo: Number(input.importo),
+      scadenza: input.scadenza || null,
+      target: input.target ? Number(input.target) : null,
+    })
     .eq("id", id)
     .select()
     .single();
