@@ -237,6 +237,17 @@ export async function creaObiettivo(input) {
   return data;
 }
 
+export async function aggiornaObiettivo(id, input) {
+  const { data, error } = await supabase
+    .from("obiettivi")
+    .update({ nome: input.nome.trim(), target: Number(input.target) })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function aggiornaStatoObiettivo(id, stato) {
   const { data, error } = await supabase.from("obiettivi").update({ stato }).eq("id", id).select().single();
   if (error) throw error;
@@ -257,8 +268,11 @@ export async function listaVersamentiObiettivi() {
   return data;
 }
 
+// La tabella si chiama ancora buoni_fruttiferi, ma ora contiene tutti i
+// risparmi non spendibili (libretto, buoni, obbligazioni), distinti
+// dalla colonna `tipo`. Prima quelli con scadenza, i senza in fondo.
 export async function listaBuoni() {
-  const { data, error } = await supabase.from("buoni_fruttiferi").select("*").order("scadenza");
+  const { data, error } = await supabase.from("buoni_fruttiferi").select("*").order("scadenza", { ascending: true, nullsFirst: false });
   if (error) throw error;
   return data;
 }
@@ -267,7 +281,25 @@ export async function creaBuono(input) {
   const { data: sessione } = await supabase.auth.getUser();
   const { data, error } = await supabase
     .from("buoni_fruttiferi")
-    .insert({ user_id: sessione.user.id, nome: input.nome.trim(), importo: Number(input.importo), scadenza: input.scadenza, stato: input.stato || "Bloccato" })
+    .insert({
+      user_id: sessione.user.id,
+      tipo: input.tipo || "Buono fruttifero",
+      nome: input.nome.trim(),
+      importo: Number(input.importo),
+      scadenza: input.scadenza || null,
+      stato: input.stato || "Bloccato",
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function aggiornaBuono(id, input) {
+  const { data, error } = await supabase
+    .from("buoni_fruttiferi")
+    .update({ tipo: input.tipo, nome: input.nome.trim(), importo: Number(input.importo), scadenza: input.scadenza || null })
+    .eq("id", id)
     .select()
     .single();
   if (error) throw error;
