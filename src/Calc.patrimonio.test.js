@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validaObiettivo, accumulatoObiettivo, progressoObiettivo, statoVisibileObiettivo, collegaVersamentiAObiettivi, validaBuono, patrimonioNetto, TIPI_PATRIMONIO, progressoVoce } from "./calc.js";
+import { totaleObiettivi, validaObiettivo, accumulatoObiettivo, progressoObiettivo, statoVisibileObiettivo, collegaVersamentiAObiettivi, validaBuono, patrimonioNetto, TIPI_PATRIMONIO, progressoVoce } from "./calc.js";
 
 // Test aggiunti dopo il bug degli obiettivi: i versamenti arrivano dalle
 // transazioni come uscite (importo negativo), e la barra risultava piena
@@ -151,5 +151,25 @@ describe("obiettivi con importo già accumulato (mesi passati)", () => {
     expect(validaObiettivo({ nome: "ETF", target: "5000", iniziale: "" })).toEqual({});
     expect(validaObiettivo({ nome: "ETF", target: "5000", iniziale: "1800" })).toEqual({});
     expect(validaObiettivo({ nome: "ETF", target: "5000", iniziale: "-1" }).iniziale).toBeDefined();
+  });
+});
+
+describe("gli obiettivi contano nel patrimonio totale", () => {
+  const obiettivi = [
+    { target: 5000, stato: "Attivo", iniziale: 1800, storico: [{ importo: -150 }, { importo: -150 }] }, // 2100
+    { target: 500, stato: "Attivo", storico: [{ importo: -500 }] }, // 500, archiviato ma i soldi ci sono
+  ];
+
+  it("totaleObiettivi somma già accumulato e versamenti di tutti gli obiettivi", () => {
+    expect(totaleObiettivi(obiettivi)).toBe(2600);
+  });
+
+  it("patrimonioNetto = conti + voci + obiettivi", () => {
+    expect(patrimonioNetto(1000, [{ importo: "1480" }], obiettivi)).toBe(1000 + 1480 + 2600);
+  });
+
+  it("senza obiettivi si comporta come prima", () => {
+    expect(patrimonioNetto(1000, [{ importo: 500 }])).toBe(1500);
+    expect(totaleObiettivi()).toBe(0);
   });
 });
